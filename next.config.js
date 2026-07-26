@@ -1,12 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...(config.resolve.alias || {})
-    }
-    return config
-  }
-}
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "a.espncdn.com",
+      },
+    ],
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

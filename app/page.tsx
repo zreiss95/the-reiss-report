@@ -1,48 +1,228 @@
-import { supabase } from "../lib/supabase"
+import Link from "next/link";
+import FeatureCard from "../lib/components/FeatureCard";
 
-export default async function Home() {
-  const { data: picks } = await supabase
-    .from("picks")
-    .select("*")
-    .order("created_at", { ascending: false })
-
+export default function HomePage() {
   return (
-    <div style={{ padding: 20, background: "#0B0B0F", minHeight: "100vh", color: "white" }}>
-      
-      <h1 style={{ fontSize: 40, fontWeight: "bold" }}>
-        Reiss NFL Picks
-      </h1>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#080B0F",
+        color: "white",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      {/* Hero */}
 
-      <p style={{ color: "#aaa", marginTop: 10 }}>
-        Live NFL Picks • Survivor • DFS
-      </p>
+      <section
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "30px 24px 60px",
+        }}
+      >
 
-      <div style={{ marginTop: 30 }}>
-        {picks?.map((p) => (
-          <div
-            key={p.id}
+        {/* Top Navigation */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: 25,
+          }}
+        >
+          <Link
+            href="/admin/login"
             style={{
-              padding: 16,
-              background: "#161622",
-              borderRadius: 12,
-              marginBottom: 10
+              padding: "10px 18px",
+              borderRadius: 999,
+              background: "#2563EB",
+              color: "white",
+              textDecoration: "none",
+              fontWeight: 800,
+              border: "1px solid #3B82F6",
+              boxShadow: "0 8px 20px rgba(0,0,0,.25)",
             }}
           >
-            <div style={{ fontWeight: "bold", fontSize: 18 }}>
-              {p.game}
-            </div>
+            ⚙️ Admin
+          </Link>
+        </div>
 
-            <div style={{ fontSize: 22, marginTop: 5 }}>
-              {p.pick}
-            </div>
+        <h1
+          style={{
+            fontSize: 54,
+            marginBottom: 12,
+            fontWeight: 800,
+          }}
+        >
+          🏈 The Reiss Report
+        </h1>
 
-            <div style={{ color: "#aaa", marginTop: 8, fontSize: 14 }}>
-              Week {p.week} • {p.category} • {p.odds} • {p.units}u • {p.result}
-            </div>
-          </div>
-        ))}
-      </div>
+        <p
+          style={{
+            color: "#A0AEC0",
+            fontSize: 22,
+            marginBottom: 30,
+          }}
+        >
+          NFL Picks • Survivor • Best Bets • Rankings • Fantasy
+        </p>
 
-    </div>
-  )
+        <div
+          style={{
+            display: "flex",
+            gap: 15,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link href="/weekly-picks">
+            <button
+              style={{
+                background: "#16A34A",
+                color: "white",
+                padding: "14px 24px",
+                borderRadius: 10,
+                border: "none",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              View Weekly Picks
+            </button>
+          </Link>
+
+          <Link href="/rankings">
+            <button
+              style={{
+                background: "#1E293B",
+                color: "white",
+                padding: "14px 24px",
+                borderRadius: 10,
+                border: "1px solid #334155",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Power Rankings
+            </button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Stats */}
+
+      <section
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "0 24px 60px",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+            gap: 20,
+          }}
+        >
+          {[
+            ["Overall Record", "0-0"],
+            ["Best Bets", "0-0"],
+            ["Survivor", "0-0"],
+            ["ATS Record", "0-0"],
+          ].map(([title, value]) => (
+            <div
+              key={title}
+              style={{
+                background: "#111827",
+                border: "1px solid #1F2937",
+                borderRadius: 14,
+                padding: 25,
+              }}
+            >
+              <div
+                style={{
+                  color: "#94A3B8",
+                  fontSize: 14,
+                }}
+              >
+                {title}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 34,
+                  fontWeight: 800,
+                  marginTop: 10,
+                }}
+              >
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+
+      <section
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "0 24px 80px",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: 34,
+            marginBottom: 25,
+          }}
+        >
+          Everything You Need
+        </h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
+            gap: 20,
+          }}
+        >
+          <FeatureCard
+            title="Weekly Picks"
+            description="Weekly NFL game predictions against the spread and straight up."
+            href="/weekly-picks"
+          />
+
+          <FeatureCard
+            title="Survivor Picks"
+            description="Safest survivor selections every NFL week."
+            href="/survivor"
+          />
+
+          <FeatureCard
+            title="Loser Survivor"
+            description="Reverse survivor selections each week."
+            href="/loser-survivor"
+          />
+
+          <FeatureCard
+            title="Power Rankings"
+            description="Rankings including QB, RB, WR, TE, K, DEF and Team Rankings."
+            href="/rankings"
+          />
+
+          <FeatureCard
+            title="Fantasy Rankings"
+            description="Fantasy football rankings, ADP comparisons, tiers and draft boards."
+            href="/fantasy"
+          />
+
+          <FeatureCard
+            title="DFS"
+            description="Daily Fantasy tools and projections."
+            disabled
+          />
+        </div>
+      </section>
+    </main>
+  );
 }
