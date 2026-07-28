@@ -28,8 +28,8 @@ export default function RootLayout({
           <Link href="/">Home</Link>
           <Link href="/survivor">Survivor</Link>
           <Link href="/loser-survivor">Loser Survivor</Link>
-          <Link href="/rankings">Player Rankings</Link>
-          <Link href="/team-rankings">Team Rankings</Link>
+          <Link href="/rankings/player-rankings">Player Rankings</Link>
+          <Link href="/rankings/team-rankings">Team Rankings</Link>
           <Link href="/fantasy">Fantasy ADP</Link>
         </div>
 
