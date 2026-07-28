@@ -30,20 +30,20 @@ export default function HomePage() {
           }}
         >
           <Link
-            href="/admin/login"
-            style={{
-              padding: "10px 18px",
-              borderRadius: 999,
-              background: "#2563EB",
-              color: "white",
-              textDecoration: "none",
-              fontWeight: 800,
-              border: "1px solid #3B82F6",
-              boxShadow: "0 8px 20px rgba(0,0,0,.25)",
-            }}
-          >
-            ⚙️ Admin
-          </Link>
+  href="/admin/login"
+  style={{
+    padding: "5px 10px",
+    borderRadius: 6,
+    background: "#2f3749",
+    color: "white",
+    textDecoration: "none",
+    fontSize: 12,
+    fontWeight: 500,
+    border: "1px solid #334155",
+  }}
+>
+  ⚙️ Admin
+</Link>
         </div>
 
         <h1

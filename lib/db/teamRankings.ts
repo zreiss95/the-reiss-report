@@ -65,7 +65,7 @@ export async function getTeamRankings(
   season = CURRENT_SEASON
 ) {
 
-  const { data, error } =
+const { data, error } =
     await supabase
       .from("team_rankings")
       .select("*")
@@ -78,7 +78,8 @@ export async function getTeamRankings(
         {
           ascending: true,
         }
-      );
+      )
+      .throwOnError();
 
 
 

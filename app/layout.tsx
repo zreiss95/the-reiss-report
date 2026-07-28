@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import Link from "next/link";
+import PublicRouteSwitcher from "@/components/PublicRouteSwitcher";
 
 export const metadata: Metadata = {
   title: "The Reiss Report",
@@ -16,22 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div
-          style={{
-            padding: 20,
-            borderBottom: "1px solid #24314f",
-            display: "flex",
-            gap: 20,
-            flexWrap: "wrap",
-          }}
-        >
-          <Link href="/">Home</Link>
-          <Link href="/survivor">Survivor</Link>
-          <Link href="/loser-survivor">Loser Survivor</Link>
-          <Link href="/rankings/player-rankings">Player Rankings</Link>
-          <Link href="/rankings/team-rankings">Team Rankings</Link>
-          <Link href="/fantasy">Fantasy ADP</Link>
-        </div>
+        <PublicRouteSwitcher />
 
         {children}
       </body>

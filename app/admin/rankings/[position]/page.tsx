@@ -2,6 +2,8 @@ import RankingBoard from "../../../../lib/components/RankingBoard";
 import { getRankings } from "../../../../lib/db/playerRankings";
 import RankingsImporter from "../../../../lib/components/rankings/RankingsImporter";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type Props = {
   params: {

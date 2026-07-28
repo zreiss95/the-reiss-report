@@ -2,6 +2,9 @@ import TeamRankingBoard from "@/lib/components/team/TeamRankingBoard";
 import TeamRankingsImporter from "@/lib/components/team/TeamRankingsImporter";
 import { getTeamRankings } from "@/lib/db/teamRankings";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function TeamRankingsPage() {
 
   const rankings =

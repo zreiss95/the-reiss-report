@@ -32,8 +32,9 @@ editable = false,
 
   // Independent copy for your rankings
   const [myRankings, setMyRankings] = useState(
-    rankings.map((p) => ({ ...p }))
-  );
+  [...rankings]
+    .sort((a, b) => a.myRank - b.myRank)
+);
 
   const [search, setSearch] = useState("");
 
