@@ -97,8 +97,7 @@ export default async function SurvivorPage({
 
   const overallPicks =
     await getLoserSurvivor(week);
-console.log("LOSER SURVIVOR PAGE WEEK:", week);
-console.log("LOSER SURVIVOR RESULTS:", overallPicks);
+
 
   const remainingPicks =
     await getLoserSurvivorRemaining(week);

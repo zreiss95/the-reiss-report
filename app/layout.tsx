@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "The Reiss Report",
@@ -14,7 +15,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div
+          style={{
+            padding: 20,
+            borderBottom: "1px solid #24314f",
+            display: "flex",
+            gap: 20,
+            flexWrap: "wrap",
+          }}
+        >
+          <Link href="/">Home</Link>
+          <Link href="/survivor">Survivor</Link>
+          <Link href="/loser-survivor">Loser Survivor</Link>
+          <Link href="/rankings">Player Rankings</Link>
+          <Link href="/team-rankings">Team Rankings</Link>
+          <Link href="/fantasy">Fantasy ADP</Link>
+        </div>
+
+        {children}
+      </body>
     </html>
   );
 }
