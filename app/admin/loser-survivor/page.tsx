@@ -25,13 +25,20 @@ export default async function AdminLoserSurvivorPage({
       ? currentGames
       : await getWeekGames(week);
 
-  const savedOverall = getLoserSurvivor(week);
-  const savedRemaining = getLoserSurvivorRemaining(week);
+
+  const savedOverall =
+    await getLoserSurvivor(week);
+
+
+  const savedRemaining =
+    await getLoserSurvivorRemaining(week);
+
 
   const availableWeeks = Array.from(
     { length: 18 },
     (_, i) => i + 1
   );
+
 
   return (
     <main
@@ -51,6 +58,7 @@ export default async function AdminLoserSurvivorPage({
       >
         💀 Loser Survivor Admin
       </h1>
+
 
       <div
         style={{
@@ -81,6 +89,7 @@ export default async function AdminLoserSurvivorPage({
         ))}
       </div>
 
+
       <p
         style={{
           color: "#94a3b8",
@@ -89,6 +98,7 @@ export default async function AdminLoserSurvivorPage({
       >
         NFL Week {week}
       </p>
+
 
       <div
         style={{
@@ -103,6 +113,7 @@ export default async function AdminLoserSurvivorPage({
           games={games}
           saved={savedOverall}
         />
+
 
         <SurvivorPicker
           title="♻ Remaining Teams Only"

@@ -1,23 +1,32 @@
-import db from "./db";
+import { supabase } from "@/lib/supabase";
 
 
-export function getPicks() {
+export async function getPicks() {
 
-  return db
-    .prepare(
-      `
-      SELECT *
-      FROM picks
-      ORDER BY week ASC, kickoff ASC
-      `
-    )
-    .all();
+  const { data, error } = await supabase
+    .from("picks")
+    .select("*")
+    .order("week", { ascending: true })
+    .order("kickoff", { ascending: true });
+
+
+  if (error) {
+    console.error(
+      "Get picks error:",
+      error
+    );
+
+    return [];
+  }
+
+
+  return data ?? [];
 
 }
 
 
 
-export function getPick(
+export async function getPick(
   gameId: string
 ) {
 
@@ -26,17 +35,27 @@ export function getPick(
   }
 
 
-  return db
-    .prepare(
-      `
-      SELECT *
-      FROM picks
-      WHERE gameId = ?
-      LIMIT 1
-      `
-    )
-    .get(
+  const { data, error } = await supabase
+    .from("picks")
+    .select("*")
+    .eq(
+      "gameid",
       gameId.trim()
+    )
+    .limit(1)
+    .maybeSingle();
+
+
+  if (error) {
+    console.error(
+      "Get pick error:",
+      error
     );
+
+    return null;
+  }
+
+
+  return data;
 
 }

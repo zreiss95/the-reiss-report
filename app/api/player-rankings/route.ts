@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 
@@ -7,19 +7,24 @@ export async function POST(req: NextRequest) {
 
   try {
 
-    const authError = await requireAdmin(req);
+    const authError =
+      await requireAdmin(req);
+
 
     if (authError) {
       return authError;
     }
 
 
+
     let body;
 
     try {
+
       body = await req.json();
-    }
-    catch {
+
+    } catch {
+
       return NextResponse.json(
         {
           success: false,
@@ -29,7 +34,9 @@ export async function POST(req: NextRequest) {
           status: 400,
         }
       );
+
     }
+
 
 
     const {
@@ -37,10 +44,12 @@ export async function POST(req: NextRequest) {
     } = body;
 
 
+
     if (
       !Array.isArray(rankings) ||
       rankings.length === 0
     ) {
+
       return NextResponse.json(
         {
           success: false,
@@ -50,45 +59,20 @@ export async function POST(req: NextRequest) {
           status: 400,
         }
       );
+
     }
 
 
 
-    const update = db.prepare(`
-      UPDATE player_rankings
-
-      SET
-
-        myRank = ?,
-
-        delta = ?,
-
-        updatedAt = datetime('now')
-
-      WHERE id = ?
-
-    `);
-
-
-
-    const transaction = db.transaction(
-      (rows: any[]) => {
-
-        for (const row of rows) {
-
-          if (
-            !row ||
-            typeof row !== "object"
-          ) {
-            continue;
-          }
-
-
-          if (!row.id) {
-            continue;
-          }
-
-
+    const updates = rankings
+      .filter(
+        (row: any) =>
+          row &&
+          typeof row === "object" &&
+          row.id
+      )
+      .map(
+        (row: any) => {
 
           const myRank =
             Number(row.myRank ?? 0);
@@ -99,38 +83,68 @@ export async function POST(req: NextRequest) {
 
 
 
-          update.run(
+          return {
+
+            id:
+              Number(row.id),
 
             myRank,
 
-            consensusRank - myRank,
+            delta:
+              consensusRank - myRank,
 
-            Number(row.id)
+            updatedAt:
+              new Date().toISOString(),
 
-          );
+          };
 
         }
+      );
 
+
+
+    let updated = 0;
+
+
+
+    for (const row of updates) {
+
+      const {
+        id,
+        ...values
+      } = row;
+
+
+
+      const { error } =
+        await supabase
+          .from("player_rankings")
+          .update(values)
+          .eq("id", id);
+
+
+
+      if (error) {
+        throw error;
       }
-    );
 
 
+      updated++;
 
-    transaction(rankings);
+    }
 
 
 
     return NextResponse.json(
       {
         success: true,
-        count: rankings.length,
+        count: updated,
       }
     );
 
 
 
-  }
-  catch (err: any) {
+  } catch (err: any) {
 
     console.error(
       "Update ranking error:",

@@ -12,6 +12,8 @@ import {
 } from "../../lib/db/stats";
 import SeasonRecord from "../../lib/components/SeasonRecord";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function WeeklyPicks({
   searchParams,
@@ -38,18 +40,96 @@ const games =
     : await getWeekGames(week);
 
 // Database
-const savedPicks = getPicks(week);
-const stats = getSeasonStats();
-const featuredStats = getFeaturedStats(week);
-const featured = getFeaturedPicks(week);
+const [
+  savedPicks,
+  stats,
+  featuredStats,
+  featured,
+] = await Promise.all([
+  getPicks(week),
+  getSeasonStats(),
+  getFeaturedStats(week),
+  getFeaturedPicks(week),
+]);
+
 const availableWeeks = Array.from(
   { length: 18 },
   (_, i) => i + 1
 );
 
-const picks = Object.fromEntries(
-  savedPicks.map((pick: any) => [pick.gameId, pick])
-);
+
+
+const featuredNormalized = {
+  ...featured,
+
+  moneyline: featured.moneyline
+    ? {
+        ...featured.moneyline,
+        moneylinePick:
+          featured.moneyline.moneylinepick,
+      }
+    : null,
+
+  ats: featured.ats
+    ? {
+        ...featured.ats,
+        atsPick:
+          featured.ats.atspick,
+      }
+    : null,
+
+  total: featured.total
+    ? {
+        ...featured.total,
+        totalPick:
+          featured.total.totalpick,
+        totalLine:
+          featured.total.totalline,
+      }
+    : null,
+};
+const picks =
+  Object.fromEntries(
+    savedPicks.map(
+      (pick:any) => [
+
+        pick.gameid,
+
+        {
+          ...pick,
+
+          moneylinePick:
+            pick.moneylinepick,
+
+          atsPick:
+            pick.atspick,
+
+          totalPick:
+            pick.totalpick,
+
+          totalLine:
+            pick.totalline,
+
+          moneylineResult:
+            pick.moneylineresult,
+
+          atsResult:
+            pick.atsresult,
+
+          totalResult:
+            pick.totalresult,
+
+          homeScore:
+            pick.homescore,
+
+          awayScore:
+            pick.awayscore,
+
+        }
+
+      ]
+    )
+  );
 
 function getTeamLogo(teamName: string) {
   for (const game of games) {
@@ -98,7 +178,7 @@ return (
       <SeasonRecord stats={stats} />
       {/* Featured Picks */}
 
-{(featured.moneyline || featured.ats || featured.total) && (
+{(featuredNormalized.moneyline || featuredNormalized.ats || featuredNormalized.total) && (
   <div
     style={{
       display: "grid",
@@ -108,7 +188,7 @@ return (
       alignItems: "stretch",
     }}
   >
-    {featured.moneyline && (
+    {featuredNormalized.moneyline && (
       <div
        style={{
   background: "linear-gradient(145deg,#182743,#111827)",
@@ -160,8 +240,8 @@ return (
   }}
 >
   <img
-    src={getTeamLogo(featured.moneyline.moneylinePick)}
-    alt={featured.moneyline.moneylinePick}
+    src={getTeamLogo(featuredNormalized.moneyline.moneylinePick)}
+    alt={featuredNormalized.moneyline.moneylinePick}
     style={{
       width: 56,
       height: 56,
@@ -177,7 +257,7 @@ return (
         lineHeight: 1.1,
       }}
     >
-      {featured.moneyline.moneylinePick}
+      {featuredNormalized.moneyline.moneylinePick}
     </div>
 
     <div
@@ -187,16 +267,16 @@ return (
       }}
     >
       over{" "}
-      {featured.moneyline.moneylinePick === featured.moneyline.home
-        ? featured.moneyline.away
-        : featured.moneyline.home}
+      {featuredNormalized.moneyline.moneylinePick === featuredNormalized.moneyline.home
+        ? featuredNormalized.moneyline.away
+        : featuredNormalized.moneyline.home}
     </div>
   </div>
 </div>
 
         <div
   style={{
-    marginTop: 8,
+    marginTop: "auto",
   }}
 >
 
@@ -222,7 +302,7 @@ return (
 </div>
     )}
 
-    {featured.ats && (
+    {featuredNormalized.ats && (
       <div
         style={{
   background: "linear-gradient(145deg,#182743,#111827)",
@@ -273,8 +353,8 @@ return (
   }}
 >
   <img
-    src={getTeamLogo(featured.ats.atsPick)}
-    alt={featured.ats.atsPick}
+    src={getTeamLogo(featuredNormalized.ats.atsPick)}
+    alt={featuredNormalized.ats.atsPick}
     style={{
       width: 56,
       height: 56,
@@ -290,9 +370,9 @@ return (
     lineHeight: 1.1,
   }}
 >
-  {featured.ats.atsPick}{" "}
-  {featured.ats.spread > 0 ? "+" : ""}
-  {featured.ats.spread}
+  {featuredNormalized.ats.atsPick}{" "}
+  {featuredNormalized.ats.spread > 0 ? "+" : ""}
+  {featuredNormalized.ats.spread}
 </div>
 
 <div
@@ -302,21 +382,22 @@ return (
   }}
 >
   vs{" "}
-  {featured.ats.atsPick === featured.ats.home
-    ? featured.ats.away
-    : featured.ats.home}
+  {featuredNormalized.ats.atsPick === featuredNormalized.ats.home
+    ? featuredNormalized.ats.away
+    : featuredNormalized.ats.home}
 </div>
   </div>
 </div>
 
         <div
   style={{
-    marginTop: 8,
+    marginTop: "auto",
   }}
+
 >
   <div
     style={{
-      marginTop: 8,
+      marginTop: 12,
       color: "#94a3b8",
       fontSize: 14,
       fontWeight: 600,
@@ -339,7 +420,7 @@ return (
       </div>
     )}
 
-{featured.total && (
+{featuredNormalized.total && (
   <div
     style={{
   background: "linear-gradient(145deg,#182743,#111827)",
@@ -405,12 +486,12 @@ return (
       fontSize: 54,
       lineHeight: 1,
       color:
-        featured.total.totalPick === "Over"
+        featuredNormalized.total.totalPick === "Over"
           ? "#118524"
           : "#c75818",
     }}
   >
-    {featured.total.totalPick === "Over" ? "⬆" : "⬇"}
+    {featuredNormalized.total.totalPick === "Over" ? "⬆" : "⬇"}
   </span>
 </div>
 
@@ -422,7 +503,7 @@ return (
             lineHeight: 1.1,
           }}
         >
-          {featured.total.totalPick} {featured.total.totalLine}
+          {featuredNormalized.total.totalPick} {featuredNormalized.total.totalLine}
         </div>
 
         <div
@@ -431,12 +512,12 @@ return (
             marginTop: 4,
           }}
         >
-          {featured.total.away} @ {featured.total.home}
+          {featuredNormalized.total.away} @ {featuredNormalized.total.home}
         </div>
       </div>
     </div>
 
-    <div style={{ marginTop: 8 }}>
+    <div style={{ marginTop: "auto" }}>
 
 
       <div
@@ -573,7 +654,7 @@ return (
             homeScore={pick.homeScore}
             awayScore={pick.awayScore}
             totalPick={pick.totalPick}
-totalLine={pick.totalLine}
+            totalLine={pick.totalLine}
           />
         );
       })}

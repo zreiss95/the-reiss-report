@@ -25,13 +25,20 @@ export default async function SurvivorAdminPage({
       ? currentGames
       : await getWeekGames(week);
 
-  const savedOverall = getSurvivor(week);
-const savedRemaining = getSurvivorRemaining(week);
+
+  const savedOverall =
+    await getSurvivor(week);
+
+
+  const savedRemaining =
+    await getSurvivorRemaining(week);
+
 
   const availableWeeks = Array.from(
     { length: 18 },
     (_, i) => i + 1
   );
+
 
   return (
     <main
@@ -51,6 +58,7 @@ const savedRemaining = getSurvivorRemaining(week);
       >
         Survivor Admin
       </h1>
+
 
       <div
         style={{
@@ -81,6 +89,7 @@ const savedRemaining = getSurvivorRemaining(week);
         ))}
       </div>
 
+
       <p
         style={{
           color: "#94a3b8",
@@ -90,6 +99,7 @@ const savedRemaining = getSurvivorRemaining(week);
       >
         NFL Week {week}
       </p>
+
 
       <p
         style={{
@@ -104,6 +114,7 @@ const savedRemaining = getSurvivorRemaining(week);
         and #3 appear as alternative selections.
       </p>
 
+
       <div
         style={{
           background: "linear-gradient(145deg,#172036,#111827)",
@@ -114,27 +125,27 @@ const savedRemaining = getSurvivorRemaining(week);
         }}
       >
         <div
-  style={{
-    display: "grid",
-    gap: 50,
-  }}
->
-  <SurvivorPicker
-    title="🏆 Best Picks (Regardless of Week)"
-    apiRoute="/api/survivor"
-    buttonText="Save Overall Picks"
-    games={games}
-    saved={savedOverall}
-  />
+          style={{
+            display: "grid",
+            gap: 50,
+          }}
+        >
+          <SurvivorPicker
+            title="🏆 Best Picks (Regardless of Week)"
+            apiRoute="/api/survivor"
+            buttonText="Save Overall Picks"
+            games={games}
+            saved={savedOverall}
+          />
 
-  <SurvivorPicker
-    title="♻ Remaining Teams Only"
-    apiRoute="/api/survivor-remaining"
-    buttonText="Save Remaining Picks"
-    games={games}
-    saved={savedRemaining}
-  />
-</div>
+          <SurvivorPicker
+            title="♻ Remaining Teams Only"
+            apiRoute="/api/survivor-remaining"
+            buttonText="Save Remaining Picks"
+            games={games}
+            saved={savedRemaining}
+          />
+        </div>
       </div>
     </main>
   );

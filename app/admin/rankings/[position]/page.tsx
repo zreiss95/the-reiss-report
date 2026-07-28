@@ -23,7 +23,7 @@ type PlayerRanking = {
 };
 
 
-export default function RankingsPage({
+export default async function RankingsPage({
   params,
 }: Props) {
 
@@ -34,8 +34,7 @@ export default function RankingsPage({
 
 
   const rankings =
-    getRankings(position) as PlayerRanking[];
-
+    await getRankings(position) as PlayerRanking[];
 
 
   return (
@@ -69,12 +68,10 @@ export default function RankingsPage({
       </p>
 
 
-
       <RankingsImporter
         position={position}
         admin={true}
       />
-
 
 
       {
@@ -115,13 +112,11 @@ export default function RankingsPage({
       }
 
 
-
       <div
         style={{
           height: 30,
         }}
       />
-
 
 
       <RankingBoard

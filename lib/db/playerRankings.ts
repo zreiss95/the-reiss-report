@@ -1,4 +1,4 @@
-import db from "./db";
+import { supabase } from "@/lib/supabase";
 
 
 const CURRENT_SEASON = 2026;
@@ -43,7 +43,7 @@ function validateRankingData(
       Number(data.consensusRank ?? 0),
 
     myRank:
-      Number(data.myRank ?? 0),
+      Number(data.myRank ?? null),
 
     analysis:
       String(data.analysis ?? "")
@@ -58,50 +58,112 @@ function validateRankingData(
 
 
 
-export function getRankings(
+export async function getRankings(
   position: string,
   season = CURRENT_SEASON
 ) {
 
-  return db
-    .prepare(
-      `
-      SELECT
-        pr.*,
-        p.headshot
+  const normalizedPosition =
+    String(position)
+      .toUpperCase()
+      .trim();
 
-      FROM player_rankings pr
 
-      LEFT JOIN players p
-        ON p.name = pr.player
 
-      WHERE pr.position = ?
-      AND pr.season = ?
+  const { data: rankings, error } =
+    await supabase
+      .from("player_rankings")
+      .select("*")
+      .eq(
+        "position",
+        normalizedPosition
+      )
+      .eq(
+        "season",
+        Number(season)
+      )
+      .order(
+        "consensusRank",
+        {
+          ascending: true,
+          nullsFirst: false,
+        }
+      )
+      .order(
+        "player",
+        {
+          ascending: true,
+        }
+      );
 
-      ORDER BY
-        CASE
-          WHEN pr.consensusRank IS NULL
-          OR pr.consensusRank = 0
-          THEN 9999
-          ELSE pr.consensusRank
-        END ASC,
 
-        pr.player ASC
-      `
-    )
-    .all(
-      String(position)
-        .toUpperCase()
-        .trim(),
 
-      Number(season)
+  if (error) {
+    throw error;
+  }
+
+
+
+  if (!rankings || rankings.length === 0) {
+    return [];
+  }
+
+
+
+  const playerNames =
+    rankings.map(
+      (player: any) =>
+        player.player
     );
+
+
+
+  const { data: players, error: playerError } =
+    await supabase
+      .from("players")
+      .select(
+        "name, headshot"
+      )
+      .in(
+        "name",
+        playerNames
+      );
+
+
+
+  if (playerError) {
+    throw playerError;
+  }
+
+
+
+  return rankings.map(
+    (ranking: any) => {
+
+      const player =
+        players?.find(
+          (p: any) =>
+            p.name === ranking.player
+        );
+
+
+      return {
+
+        ...ranking,
+
+        headshot:
+          player?.headshot ?? null,
+
+      };
+
+    }
+  );
 
 }
 
 
 
-export function saveRanking(
+export async function saveRanking(
   data: any
 ) {
 
@@ -110,66 +172,34 @@ export function saveRanking(
 
 
 
-  db.prepare(`
-    INSERT INTO player_rankings (
+  const { error } =
+    await supabase
+      .from("player_rankings")
+      .upsert(
+        {
+          ...row,
 
-      player,
-      position,
-      team,
+          updatedAt:
+            new Date().toISOString(),
 
-      consensusRank,
-      myRank,
-
-      analysis,
-
-      season,
-
-      updatedAt
-
-    )
-
-    VALUES (
-
-      @player,
-      @position,
-      @team,
-
-      @consensusRank,
-      @myRank,
-
-      @analysis,
-
-      @season,
-
-      datetime('now')
-
-    )
+        },
+        {
+          onConflict:
+            "player,season",
+        }
+      );
 
 
-    ON CONFLICT(player, season)
 
-    DO UPDATE SET
-
-      position = excluded.position,
-
-      team = excluded.team,
-
-      consensusRank = excluded.consensusRank,
-
-      myRank = excluded.myRank,
-
-      analysis = excluded.analysis,
-
-      updatedAt = datetime('now')
-
-  `)
-  .run(row);
+  if (error) {
+    throw error;
+  }
 
 }
 
 
 
-export function deleteRanking(
+export async function deleteRanking(
   player: string,
   season = CURRENT_SEASON
 ) {
@@ -181,43 +211,59 @@ export function deleteRanking(
   }
 
 
-  db.prepare(`
-    DELETE FROM player_rankings
 
-    WHERE player = ?
+  const { error } =
+    await supabase
+      .from("player_rankings")
+      .delete()
+      .eq(
+        "player",
+        player.trim()
+      )
+      .eq(
+        "season",
+        Number(season)
+      );
 
-    AND season = ?
 
-  `)
-  .run(
-    player.trim(),
-    Number(season)
-  );
+
+  if (error) {
+    throw error;
+  }
 
 }
 
 
 
-export function getPlayers(
+export async function getPlayers(
   position: string
 ) {
 
-  return db
-    .prepare(
-      `
-      SELECT *
+  const { data, error } =
+    await supabase
+      .from("players")
+      .select("*")
+      .eq(
+        "position",
+        String(position)
+          .toUpperCase()
+          .trim()
+      )
+      .order(
+        "name",
+        {
+          ascending: true,
+        }
+      );
 
-      FROM players
 
-      WHERE position = ?
 
-      ORDER BY name ASC
-      `
-    )
-    .all(
-      String(position)
-        .toUpperCase()
-        .trim()
-    );
+  if (error) {
+    throw error;
+  }
+
+
+
+  return data ?? [];
 
 }

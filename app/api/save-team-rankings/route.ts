@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 const CURRENT_SEASON = 2026;
@@ -7,20 +7,12 @@ const CURRENT_SEASON = 2026;
 
 export async function POST(req: NextRequest) {
 
-  const authenticated =
+  const authError =
     await requireAdmin(req);
 
 
-  if (!authenticated) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
+  if (authError) {
+    return authError;
   }
 
 
@@ -32,7 +24,9 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
 
+
     if (!Array.isArray(rankings)) {
+
       return NextResponse.json(
         {
           success: false,
@@ -42,94 +36,83 @@ export async function POST(req: NextRequest) {
           status: 400,
         }
       );
+
     }
 
 
 
-    const update = db.prepare(`
-
-      UPDATE team_rankings
-
-      SET
-
-        myRank = @myRank,
-
-        favorite = @favorite,
-
-        updatedAt = datetime('now'),
-
-
-        locked =
-          CASE
-            WHEN @lock = 1
-            THEN 1
-            ELSE locked
-          END,
-
-
-        lockedAt =
-          CASE
-            WHEN @lock = 1
-            THEN datetime('now')
-            ELSE lockedAt
-          END
-
-
-      WHERE
-
-        team = @team
-
-        AND season = @season
-
-    `);
+    let updated = 0;
 
 
 
-    const transaction =
-      db.transaction((rows: any[]) => {
+    for (const row of rankings) {
 
 
-        for (const row of rows) {
-
-
-          update.run({
-
-            team:
-              String(
-                row.team ?? ""
-              )
-              .toUpperCase()
-              .trim(),
-
-
-            myRank:
-              Number(
-                row.myRank ?? 0
-              ),
-
-
-            favorite:
-              row.favorite ?? 0,
-
-
-            season:
-              CURRENT_SEASON,
-
-
-            lock:
-              lock ? 1 : 0,
-
-          });
-
-
-        }
-
-
-      });
+      if (
+        !row ||
+        typeof row !== "object" ||
+        !row.team
+      ) {
+        continue;
+      }
 
 
 
-    transaction(rankings);
+      const updateData: any = {
+
+        myRank:
+          Number(row.myRank ?? 0),
+
+
+        favorite:
+          Number(row.favorite ?? 0),
+
+
+        updatedAt:
+          new Date().toISOString(),
+
+      };
+
+
+
+      if (lock) {
+
+        updateData.locked = 1;
+
+        updateData.lockedAt =
+          new Date().toISOString();
+
+      }
+
+
+
+      const {
+        error,
+      } = await supabase
+        .from("team_rankings")
+        .update(updateData)
+        .eq(
+          "team",
+          String(row.team)
+            .toUpperCase()
+            .trim()
+        )
+        .eq(
+          "season",
+          CURRENT_SEASON
+        );
+
+
+
+      if (error) {
+        throw error;
+      }
+
+
+
+      updated++;
+
+    }
 
 
 
@@ -137,8 +120,7 @@ export async function POST(req: NextRequest) {
 
       success: true,
 
-      count:
-        rankings.length,
+      count: updated,
 
     });
 

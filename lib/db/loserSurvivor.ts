@@ -1,4 +1,4 @@
-import db from "./db";
+import { supabase } from "@/lib/supabase";
 
 
 function formatTeamName(name: any) {
@@ -37,7 +37,7 @@ function validateSurvivorData(
 
     gameId:
       String(data.gameId ?? "")
-      .trim(),
+        .trim(),
 
     team:
       formatTeamName(data.team),
@@ -50,15 +50,15 @@ function validateSurvivorData(
 
     analysis:
       String(data.analysis ?? "")
-      .trim(),
+        .trim(),
 
     kickoff:
       String(data.kickoff ?? "")
-      .trim(),
+        .trim(),
 
     status:
       String(data.status ?? "Draft")
-      .trim(),
+        .trim(),
 
   };
 
@@ -66,7 +66,7 @@ function validateSurvivorData(
 
 
 
-function saveLoserSurvivorTable(
+async function saveLoserSurvivorTable(
   table: string,
   data: any
 ) {
@@ -76,58 +76,38 @@ function saveLoserSurvivorTable(
 
 
 
-  db.prepare(`
-    INSERT INTO ${table} (
-      week,
-      rank,
-      gameId,
-      team,
-      opponent,
-      confidence,
-      analysis,
-      kickoff,
-      status,
-      updatedAt
-    )
+  const { error } = await supabase
+    .from(table)
+    .upsert(
+      {
+        ...row,
 
-    VALUES (
-      @week,
-      @rank,
-      @gameId,
-      @team,
-      @opponent,
-      @confidence,
-      @analysis,
-      @kickoff,
-      @status,
-      datetime('now')
-    )
+        updatedAt:
+          new Date().toISOString(),
+
+      },
+      {
+        onConflict:
+          "week,rank",
+      }
+    );
 
 
-    ON CONFLICT(week, rank)
 
-    DO UPDATE SET
+  if (error) {
+    throw error;
+  }
 
-      gameId = excluded.gameId,
-      team = excluded.team,
-      opponent = excluded.opponent,
-      confidence = excluded.confidence,
-      analysis = excluded.analysis,
-      kickoff = excluded.kickoff,
-      status = excluded.status,
-      updatedAt = datetime('now')
-
-  `).run(row);
 
 }
 
 
 
-export function saveLoserSurvivor(
+export async function saveLoserSurvivor(
   data: any
 ) {
 
-  saveLoserSurvivorTable(
+  await saveLoserSurvivorTable(
     "loser_survivor",
     data
   );
@@ -136,11 +116,11 @@ export function saveLoserSurvivor(
 
 
 
-export function saveLoserSurvivorRemaining(
+export async function saveLoserSurvivorRemaining(
   data: any
 ) {
 
-  saveLoserSurvivorTable(
+  await saveLoserSurvivorTable(
     "loser_survivor_remaining",
     data
   );
@@ -149,86 +129,168 @@ export function saveLoserSurvivorRemaining(
 
 
 
-export function getLoserSurvivor(
+export async function getLoserSurvivor(
   week: number
 ) {
 
-  return db.prepare(`
-    SELECT *
-    FROM loser_survivor
-    WHERE week = ?
-    ORDER BY rank ASC
-  `)
-  .all(
-    Number(week)
-  );
+  const { data, error } = await supabase
+    .from("loser_survivor")
+    .select("*")
+    .eq(
+      "week",
+      Number(week)
+    )
+    .order(
+      "rank",
+      {
+        ascending: true,
+      }
+    );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data ?? [];
 
 }
 
 
 
-export function getLoserSurvivorRemaining(
+export async function getLoserSurvivorRemaining(
   week: number
 ) {
 
-  return db.prepare(`
-    SELECT *
-    FROM loser_survivor_remaining
-    WHERE week = ?
-    ORDER BY rank ASC
-  `)
-  .all(
-    Number(week)
-  );
+  const { data, error } = await supabase
+    .from("loser_survivor_remaining")
+    .select("*")
+    .eq(
+      "week",
+      Number(week)
+    )
+    .order(
+      "rank",
+      {
+        ascending: true,
+      }
+    );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data ?? [];
 
 }
 
 
 
-export function getAllLoserSurvivor() {
+export async function getAllLoserSurvivor() {
 
-  return db.prepare(`
-    SELECT *
-    FROM loser_survivor
-    ORDER BY week DESC, rank ASC
-  `)
-  .all();
+  const { data, error } = await supabase
+    .from("loser_survivor")
+    .select("*")
+    .order(
+      "week",
+      {
+        ascending: false,
+      }
+    )
+    .order(
+      "rank",
+      {
+        ascending: true,
+      }
+    );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data ?? [];
 
 }
 
 
 
-export function getAllLoserSurvivorRemaining() {
+export async function getAllLoserSurvivorRemaining() {
 
-  return db.prepare(`
-    SELECT *
-    FROM loser_survivor_remaining
-    ORDER BY week DESC, rank ASC
-  `)
-  .all();
+  const { data, error } = await supabase
+    .from("loser_survivor_remaining")
+    .select("*")
+    .order(
+      "week",
+      {
+        ascending: false,
+      }
+    )
+    .order(
+      "rank",
+      {
+        ascending: true,
+      }
+    );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data ?? [];
 
 }
 
 
 
-export function getAvailableLoserSurvivorWeeks() {
+export async function getAvailableLoserSurvivorWeeks() {
 
-  return db
-    .prepare(`
-      SELECT DISTINCT week
-      FROM (
-        SELECT week FROM loser_survivor
+  const { data: survivor, error: survivorError } =
+    await supabase
+      .from("loser_survivor")
+      .select("week");
 
-        UNION
 
-        SELECT week FROM loser_survivor_remaining
-      )
+  if (survivorError) {
+    throw survivorError;
+  }
 
-      ORDER BY week DESC
-    `)
-    .all()
-    .map(
-      (row: any) => row.week
+
+
+  const { data: remaining, error: remainingError } =
+    await supabase
+      .from("loser_survivor_remaining")
+      .select("week");
+
+
+  if (remainingError) {
+    throw remainingError;
+  }
+
+
+
+  const weeks = [
+    ...(survivor ?? []),
+    ...(remaining ?? []),
+  ]
+    .map((row: any) => row.week)
+    .filter(
+      (week) => week !== null && week !== undefined
+    );
+
+
+
+  return [
+    ...new Set(weeks),
+  ]
+    .sort(
+      (a, b) => Number(b) - Number(a)
     );
 
 }

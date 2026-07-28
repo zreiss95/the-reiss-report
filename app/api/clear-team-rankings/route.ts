@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 const CURRENT_SEASON = 2026;
 
+
 export async function POST(req: NextRequest) {
+
   try {
 
     const authError = await requireAdmin(req);
@@ -14,16 +16,22 @@ export async function POST(req: NextRequest) {
     }
 
 
-    const result = db.prepare(`
-      DELETE FROM team_rankings
-      WHERE season = ?
-    `).run(CURRENT_SEASON);
+
+    const { error } = await supabase
+      .from("team_rankings")
+      .delete()
+      .eq("season", CURRENT_SEASON);
+
+
+
+    if (error) {
+      throw error;
+    }
 
 
 
     return NextResponse.json({
       success: true,
-      deleted: result.changes,
     });
 
 
@@ -47,4 +55,5 @@ export async function POST(req: NextRequest) {
     );
 
   }
+
 }

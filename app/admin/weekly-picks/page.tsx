@@ -11,20 +11,30 @@ export default async function WeeklyPicksAdmin({
     week?: string;
   };
 }) {
-  const selectedWeek = Number(searchParams.week) || 1;
+  const selectedWeek =
+    Number(searchParams.week) || 1;
 
-  const games = await getWeekGames(selectedWeek);
 
-const existingPicks = getPicks(selectedWeek);
+  const games =
+    await getWeekGames(selectedWeek);
 
-const cookieStore = cookies();
 
-const authenticated =
-  cookieStore.get("admin-auth");
+  const existingPicks =
+    await getPicks(selectedWeek);
 
-if(!authenticated){
-  redirect("/admin/login");
-}
+
+  const cookieStore =
+    cookies();
+
+
+  const authenticated =
+    cookieStore.get("admin-auth");
+
+
+  if (!authenticated) {
+    redirect("/admin/login");
+  }
+
 
   return (
     <main
@@ -44,6 +54,7 @@ if(!authenticated){
         Weekly Picks Admin
       </h1>
 
+
       <p
         style={{
           color: "#94a3b8",
@@ -53,7 +64,6 @@ if(!authenticated){
         Manage picks for Week {selectedWeek}
       </p>
 
-      {/* Week Selector */}
 
       <div
         style={{
@@ -85,6 +95,7 @@ if(!authenticated){
         ))}
       </div>
 
+
       <div
         style={{
           background: "#172036",
@@ -93,10 +104,12 @@ if(!authenticated){
           padding: 30,
         }}
       >
-        <AdminEditor games={games} existingPicks={existingPicks} />
+        <AdminEditor
+          games={games}
+          existingPicks={existingPicks}
+        />
       </div>
 
-      
     </main>
   );
 }

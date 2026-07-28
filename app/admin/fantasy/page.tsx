@@ -2,8 +2,14 @@ import FantasyImporter from "../../../lib/components/fantasy/FantasyImporter";
 import FantasyRankingBoard from "../../../lib/components/fantasy/FantasyRankingBoard";
 import { getFantasyADP } from "../../../lib/db/fantasyADP";
 
-export default function FantasyPage() {
-  const rankings = getFantasyADP();
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function FantasyPage() {
+
+  const rankings =
+    await getFantasyADP();
+
 
   return (
     <main
@@ -24,6 +30,7 @@ export default function FantasyPage() {
         Fantasy ADP Rankings
       </h1>
 
+
       <p
         style={{
           color: "#94a3b8",
@@ -33,14 +40,18 @@ export default function FantasyPage() {
         Compare FantasyPros ADP against my draft board.
       </p>
 
+
       <FantasyImporter />
+
 
       <div style={{ height: 30 }} />
 
+
       <FantasyRankingBoard
-  rankings={rankings}
-  editable={true}
-/>
+        rankings={rankings}
+        editable={true}
+      />
+
     </main>
   );
 }

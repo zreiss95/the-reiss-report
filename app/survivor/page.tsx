@@ -2,8 +2,10 @@ import { getWeekGames } from "../../lib/api/getWeekGames";
 import {
   getSurvivor,
   getSurvivorRemaining,
-  getAvailableSurvivorWeeks,
 } from "../../lib/db/survivor";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function SurvivorPage({
   searchParams,
@@ -12,305 +14,425 @@ export default async function SurvivorPage({
     week?: string;
   };
 }) {
-  // Current week (temporary default)
-const currentWeek = 1;
+  const currentWeek = 1;
 
-// Load current week games
-const currentGames = await getWeekGames(currentWeek);
+  const currentGames =
+    await getWeekGames(currentWeek);
 
-// Selected week defaults to Week 1
-const week =
-  Number(searchParams.week) || currentWeek;
+  const week =
+    Number(searchParams.week) || currentWeek;
 
-// Load selected week games
-const games =
-  week === currentWeek
-    ? currentGames
-    : await getWeekGames(week);
+  const games =
+    week === currentWeek
+      ? currentGames
+      : await getWeekGames(week);
+
 
   function getTeamLogo(teamName: string) {
+    if (!teamName) return "";
+
+    const normalized =
+      teamName
+        .toLowerCase()
+        .trim();
+
+
     for (const game of games) {
-      const competition = game.competitions[0];
 
-      const home = competition.competitors.find(
-        (c: any) => c.homeAway === "home"
-      );
+      const competition =
+        game.competitions?.[0];
 
-      const away = competition.competitors.find(
-        (c: any) => c.homeAway === "away"
-      );
+      if (!competition) continue;
 
-      if (home.team.displayName === teamName) {
-        return home.team.logo;
-      }
 
-      if (away.team.displayName === teamName) {
-        return away.team.logo;
+      const competitors =
+        competition.competitors ?? [];
+
+
+      for (const competitor of competitors) {
+
+        const team =
+          competitor.team;
+
+        if (!team) continue;
+
+
+        const names = [
+          team.displayName,
+          team.shortDisplayName,
+          team.abbreviation,
+        ]
+          .filter(Boolean)
+          .map((x:string)=>
+            x.toLowerCase().trim()
+          );
+
+
+        if (
+          names.includes(normalized)
+        ) {
+          return team.logo ?? "";
+        }
+
+
+        if (
+          names.some((name:string)=>
+            name.includes(normalized) ||
+            normalized.includes(name)
+          )
+        ) {
+          return team.logo ?? "";
+        }
+
       }
     }
+
 
     return "";
   }
 
-  const overallPicks = getSurvivor(week);
-  const remainingPicks = getSurvivorRemaining(week);
 
-  const availableWeeks = Array.from(
-  { length: 18 },
-  (_, i) => i + 1
-);
+
+  const overallPicks =
+  await getSurvivor(week);
+
+
+
+
+  const remainingPicks =
+    await getSurvivorRemaining(week);
+
+
+
+  const availableWeeks =
+    Array.from(
+      { length: 18 },
+      (_, i) => i + 1
+    );
+
+
 
   function renderSection(
-    title: string,
-    picks: any[]
+    title:string,
+    picks:any[]
   ) {
+
     return (
       <>
         <h2
           style={{
-            fontSize: 30,
-            fontWeight: 800,
-            marginTop: 40,
-            marginBottom: 24,
+            fontSize:30,
+            fontWeight:800,
+            marginTop:40,
+            marginBottom:24,
           }}
         >
           {title}
         </h2>
 
-        {picks.length === 0 ? (
-          <div
-            style={{
-              background: "#172036",
-              border: "1px solid #24314f",
-              borderRadius: 18,
-              padding: 30,
-              textAlign: "center",
-              color: "#94a3b8",
-            }}
-          >
-            No picks published yet.
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gap: 24,
-            }}
-          >
 
-        
-                      {picks.map((pick: any) => {
-              const heading =
-                pick.rank === 1
-                  ? "🛡️ Best Fade"
-                  : pick.rank === 2
-                  ? "⚔️ 2nd Best Fade"
-                  : "⚠️ Backup Fade";
+        {
+          picks.length === 0 ? (
 
-              const headingColor =
-                pick.rank === 1
-                  ? "#ef4444"
-                  : pick.rank === 2
-                  ? "#f97316"
-                  : "#eab308";
+            <div
+              style={{
+                background:"#172036",
+                border:"1px solid #24314f",
+                borderRadius:18,
+                padding:30,
+                textAlign:"center",
+                color:"#94a3b8",
+              }}
+            >
+              No picks published yet.
+            </div>
 
-              const confidenceColor =
-                pick.confidence >= 90
-                  ? "#22c55e"
-                  : pick.confidence >= 80
-                  ? "#eab308"
-                  : "#ef4444";
+          ) : (
 
-              return (
-                <div
-                  key={pick.rank}
-                  style={{
-                    background:
-                      "linear-gradient(145deg,#172036,#111827)",
-                    border: "1px solid #2b3b60",
-                    borderRadius: 22,
-                    padding: 30,
-                    boxShadow: "0 18px 40px rgba(0,0,0,.35)",
-                  }}
-                >
-                  <div
-                    style={{
-                      color: headingColor,
-                      fontWeight: 800,
-                      fontSize: 18,
-                      marginBottom: 18,
-                    }}
-                  >
-                    {heading}
-                  </div>
+            <div
+              style={{
+                display:"grid",
+                gap:24,
+              }}
+            >
+
+            {
+              picks.map((pick:any)=>{
+
+                const logo =
+                  getTeamLogo(
+                    pick.team
+                  );
+
+
+                const heading =
+                  pick.rank === 1
+                    ? "🛡️ Best Pick"
+                    : pick.rank === 2
+                    ? "⚔️ 2nd Pick"
+                    : "⚠️ Backup Pick";
+
+
+                const headingColor =
+                  pick.rank === 1
+                    ? "#ef4444"
+                    : pick.rank === 2
+                    ? "#f97316"
+                    : "#eab308";
+
+
+                const confidenceColor =
+                  pick.confidence >= 90
+                    ? "#22c55e"
+                    : pick.confidence >= 80
+                    ? "#eab308"
+                    : "#ef4444";
+
+
+                return (
 
                   <div
+                    key={pick.rank}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 20,
-                      marginBottom: 14,
+                      background:
+                        "linear-gradient(145deg,#172036,#111827)",
+                      border:
+                        "1px solid #2b3b60",
+                      borderRadius:22,
+                      padding:30,
+                      boxShadow:
+                        "0 18px 40px rgba(0,0,0,.35)",
                     }}
                   >
-                    <img
-                      src={getTeamLogo(pick.team)}
-                      alt={pick.team}
+
+                    <div
                       style={{
-                        width: 64,
-                        height: 64,
-                        objectFit: "contain",
+                        color:headingColor,
+                        fontWeight:800,
+                        fontSize:18,
+                        marginBottom:18,
                       }}
-                    />
-
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 32,
-                          fontWeight: 900,
-                          lineHeight: 1.1,
-                        }}
-                      >
-                        {pick.team}
-                      </div>
-
-                      <div
-                        style={{
-                          color: "#94a3b8",
-                          marginTop: 4,
-                          fontSize: 18,
-                        }}
-                      >
-                        vs {pick.opponent}
-                      </div>
+                    >
+                      {heading}
                     </div>
+
+
+                    <div
+                      style={{
+                        display:"flex",
+                        alignItems:"center",
+                        gap:20,
+                      }}
+                    >
+
+                      {
+                        logo && (
+
+                          <img
+                            src={logo}
+                            alt={pick.team}
+                            style={{
+                              width:64,
+                              height:64,
+                              objectFit:"contain",
+                            }}
+                          />
+
+                        )
+                      }
+
+
+                      <div>
+
+                        <div
+                          style={{
+                            fontSize:32,
+                            fontWeight:900,
+                          }}
+                        >
+                          {pick.team}
+                        </div>
+
+
+                        <div
+                          style={{
+                            color:"#94a3b8",
+                            fontSize:18,
+                          }}
+                        >
+                          vs {pick.opponent}
+                        </div>
+
+                      </div>
+
+                    </div>
+
+
+
+                    <div
+                      style={{
+                        display:"inline-block",
+                        marginTop:18,
+                        padding:"8px 16px",
+                        borderRadius:999,
+                        background:confidenceColor,
+                        color:"white",
+                        fontWeight:700,
+                      }}
+                    >
+                      {pick.confidence}% Confidence
+                    </div>
+
+
+
+                    <div
+                      style={{
+                        marginTop:22,
+                        padding:20,
+                        background:"#111827",
+                        border:
+                          "1px solid #24314f",
+                        borderRadius:14,
+                        color:"#d1d5db",
+                        lineHeight:1.7,
+                      }}
+                    >
+                      {pick.analysis}
+                    </div>
+
+
+
+                    <div
+                      style={{
+                        marginTop:18,
+                        color:"#94a3b8",
+                        fontSize:14,
+                        textAlign:"right",
+                      }}
+                    >
+                      Kickoff •{" "}
+                      {
+                        pick.kickoff
+                        ? new Date(
+                            pick.kickoff
+                          ).toLocaleString(
+                            "en-US",
+                            {
+                              weekday:"short",
+                              month:"short",
+                              day:"numeric",
+                              hour:"numeric",
+                              minute:"2-digit",
+                            }
+                          )
+                        : ""
+                      }
+
+                    </div>
+
+
                   </div>
 
-                  <div
-                    style={{
-                      display: "inline-block",
-                      marginTop: 18,
-                      padding: "8px 16px",
-                      borderRadius: 999,
-                      background: confidenceColor,
-                      color: "white",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {pick.confidence}% Confidence
-                  </div>
+                );
 
-                  <div
-                    style={{
-                      marginTop: 22,
-                      padding: 20,
-                      background: "#111827",
-                      border: "1px solid #24314f",
-                      borderRadius: 14,
-                      color: "#d1d5db",
-                      lineHeight: 1.7,
-                    }}
-                  >
-                    {pick.analysis}
-                  </div>
+              })
+            }
 
-                  <div
-                    style={{
-                      marginTop: 18,
-                      color: "#94a3b8",
-                      fontSize: 14,
-                      fontWeight: 600,
-                      textAlign: "right",
-                    }}
-                  >
-                    Kickoff •{" "}
-                    {pick.kickoff
-                      ? new Date(
-                          pick.kickoff
-                        ).toLocaleString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })
-                      : ""}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+            </div>
+
+          )
+        }
+
       </>
     );
   }
 
+
+
   return (
+
     <main
       style={{
-        maxWidth: 1000,
-        margin: "40px auto",
-        padding: 20,
-        color: "white",
+        maxWidth:1000,
+        margin:"40px auto",
+        padding:20,
+        color:"white",
       }}
     >
+
       <h1
         style={{
-          fontSize: 48,
-          fontWeight: 800,
-          marginBottom: 8,
+          fontSize:48,
+          fontWeight:800,
         }}
       >
         🛡️ Survivor Picks
       </h1>
 
+
+
       <div
         style={{
-          display: "flex",
-          gap: 10,
-          flexWrap: "wrap",
-          marginBottom: 25,
+          display:"flex",
+          gap:10,
+          flexWrap:"wrap",
+          marginBottom:25,
         }}
       >
-        {availableWeeks.map((w: number) => (
+
+      {
+        availableWeeks.map((w)=>(
+
           <a
             key={w}
             href={`/survivor?week=${w}`}
             style={{
-              padding: "8px 16px",
-              borderRadius: 999,
-              textDecoration: "none",
+              padding:"8px 16px",
+              borderRadius:999,
+              textDecoration:"none",
               background:
                 week === w
-                  ? "#dc2626"
-                  : "#1e293b",
-              color: "white",
-              fontWeight: 700,
+                ? "#dc2626"
+                : "#1e293b",
+              color:"white",
+              fontWeight:700,
             }}
           >
             Week {w}
           </a>
-        ))}
+
+        ))
+      }
+
       </div>
+
+
 
       <p
         style={{
-          color: "#94a3b8",
-          fontSize: 18,
-          marginBottom: 40,
+          color:"#94a3b8",
+          fontSize:18,
+          marginBottom:40,
         }}
       >
         NFL Week {week}
       </p>
+
+
 
       {renderSection(
         "🛡️ Best Picks (Regardless of Week)",
         overallPicks
       )}
 
+
       {renderSection(
         "♻ Remaining Teams Only",
         remainingPicks
       )}
+
+
     </main>
+
   );
 }

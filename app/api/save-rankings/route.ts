@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 const CURRENT_SEASON = 2026;
@@ -42,174 +42,126 @@ export async function POST(req: NextRequest) {
 
 
 
-    const update = db.prepare(`
+    let updated = 0;
 
-      UPDATE player_rankings
 
-      SET
 
-        player = @player,
+    for (const row of rankings) {
 
-        team = @team,
 
-        myRank = @myRank,
+      if (
+        !row ||
+        typeof row !== "object"
+      ) {
+        continue;
+      }
 
-        favorite = @favorite,
 
-        updatedAt = datetime('now'),
 
-        locked =
-          CASE
-            WHEN @lock = 1
-            THEN 1
-            ELSE locked
-          END,
+      const player =
+        String(row.player ?? "")
+          .trim();
 
-        lockedAt =
-          CASE
-            WHEN @lock = 1
-            THEN datetime('now')
-            ELSE lockedAt
-          END
 
 
-      WHERE
+      if (!player) {
+        continue;
+      }
 
-        id = @id
 
-        AND season = @season
 
-    `);
+      const normalizedPosition =
+        String(
+          position ?? row.position ?? ""
+        )
+        .toUpperCase()
+        .trim();
 
 
 
-    const updateFallback = db.prepare(`
+      const updateData: any = {
 
-      UPDATE player_rankings
+        player,
 
-      SET
+        team:
+          String(row.team ?? "")
+            .toUpperCase()
+            .trim(),
 
-        player = @player,
 
-        team = @team,
+        myRank:
+  Number(row.myRank ?? null),
 
-        myRank = @myRank,
 
-        favorite = @favorite,
+        favorite:
+          Number(row.favorite ?? 0),
 
-        updatedAt = datetime('now')
 
-      WHERE
+        updatedAt:
+          new Date().toISOString(),
 
-        player = @originalPlayer
+      };
 
-        AND position = @position
 
-        AND season = @season
 
-    `);
+      if (lock) {
 
+        updateData.locked = 1;
 
+        updateData.lockedAt =
+          new Date().toISOString();
 
-    const transaction =
-      db.transaction((rows: any[]) => {
+      }
 
 
-        for (const row of rows) {
 
+      let query =
+        supabase
+          .from("player_rankings")
+          .update(updateData)
+          .eq("season", CURRENT_SEASON);
 
-          const data = {
 
-            id:
-              row.id ?? null,
 
+      if (row.id) {
 
-            player:
-              String(
-                row.player ?? ""
-              ).trim(),
+        query =
+          query.eq(
+            "id",
+            Number(row.id)
+          );
 
+      } else {
 
-            team:
-              String(
-                row.team ?? ""
-              )
-              .trim()
-              .toUpperCase(),
-
-
-            myRank:
-              Number(
-                row.myRank ?? 0
-              ),
-
-
-            favorite:
-              Number(
-                row.favorite ?? 0
-              ),
-
-
-            lock:
-              lock ? 1 : 0,
-
-
-            season:
-              CURRENT_SEASON,
-
-
-            originalPlayer:
-              row.originalPlayer ??
-              row.player,
-
-
-            position:
-              String(
-                position ?? row.position ?? ""
-              )
-              .toUpperCase()
-              .trim(),
-
-          };
-
-
-
-          let result;
-
-
-
-          if (data.id) {
-
-            result =
-              update.run(data);
-
-          } else {
-
-            result =
-              updateFallback.run(data);
-
-          }
-
-
-
-          if (result.changes === 0) {
-
-            console.warn(
-              "No ranking updated for:",
-              data.player
+        query =
+          query
+            .eq(
+              "player",
+              row.originalPlayer ?? player
+            )
+            .eq(
+              "position",
+              normalizedPosition
             );
 
-          }
-
-
-        }
-
-
-      });
+      }
 
 
 
-    transaction(rankings);
+      const { error } =
+        await query;
+
+
+
+      if (error) {
+        throw error;
+      }
+
+
+
+      updated++;
+
+    }
 
 
 
@@ -217,8 +169,7 @@ export async function POST(req: NextRequest) {
 
       success: true,
 
-      count:
-        rankings.length,
+      count: updated,
 
     });
 

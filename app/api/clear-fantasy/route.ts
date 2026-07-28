@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 
@@ -14,18 +14,20 @@ export async function POST(req: NextRequest) {
     }
 
 
+    const { error } = await supabase
+      .from("fantasy_adp")
+      .delete()
+      .neq("id", 0);
 
-    const result = db.prepare(`
-      DELETE FROM fantasy_adp
-    `).run();
 
+    if (error) {
+      throw error;
+    }
 
 
     return NextResponse.json({
       success: true,
-      deleted: result.changes,
     });
-
 
 
   } catch (err: any) {

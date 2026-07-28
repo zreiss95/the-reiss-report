@@ -1,15 +1,18 @@
 import TeamRankingBoard from "@/lib/components/team/TeamRankingBoard";
 import { getTeamRankings } from "@/lib/db/teamRankings";
 
-export default function TeamRankingsPage() {
-  const rankings = getTeamRankings(2026);
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function TeamRankingsPage() {
+  const rankings = await getTeamRankings(2026);
 
   return (
     <main
       style={{
         maxWidth: 1500,
-        margin: "0 auto",
-        padding: "40px 24px",
+        margin: "40px auto",
+        padding: 20,
         color: "white",
       }}
     >
@@ -23,7 +26,10 @@ export default function TeamRankingsPage() {
         🏈 Team Rankings
       </h1>
 
-      <TeamRankingBoard rankings={rankings} />
+      <TeamRankingBoard
+        rankings={rankings}
+        editable={false}
+      />
     </main>
   );
 }

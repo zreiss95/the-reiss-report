@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 const CURRENT_SEASON = 2026;
 
+
 export async function POST(req: NextRequest) {
+
   try {
+
     const authError = await requireAdmin(req);
 
     if (authError) {
@@ -47,98 +50,78 @@ export async function POST(req: NextRequest) {
 
 
 
-    const insert = db.prepare(`
-      INSERT INTO fantasy_adp (
-        player,
-        position,
-        team,
-        adp,
-        adpRank,
-        myRank,
-        favorite,
-        tier,
-        analysis,
-        season,
-        updatedAt
-      )
+    const rows = players
+      .filter((row: any) => {
+        return String(row.player ?? "").trim();
+      })
+      .map((row: any) => ({
 
-      VALUES (
-        @player,
-        @position,
-        @team,
-        @adp,
-        @adpRank,
-        @myRank,
-        0,
-        3,
-        '',
-        @season,
-        datetime('now')
-      )
-
-      ON CONFLICT(player, season)
-
-      DO UPDATE SET
-
-        position = excluded.position,
-        team = excluded.team,
-        adp = excluded.adp,
-        adpRank = excluded.adpRank,
-        myRank = excluded.myRank,
-        updatedAt = datetime('now')
-    `);
-
-
-
-    const transaction = db.transaction((rows: any[]) => {
-
-      for (const row of rows) {
-
-        const player =
+        player:
           String(row.player ?? "")
-            .trim();
+            .trim(),
+
+        position:
+          String(row.position ?? "")
+            .toUpperCase()
+            .trim(),
+
+        team:
+          String(row.team ?? "")
+            .toUpperCase()
+            .trim(),
+
+        adp:
+          Number(row.adp ?? 0),
+
+        adpRank:
+          Number(row.adpRank ?? 0),
+
+        myRank:
+          Number(row.myRank ?? 0),
+
+        favorite: 0,
+
+        tier: 3,
+
+        analysis: "",
+
+        season: importSeason,
+
+        updatedAt:
+          new Date().toISOString(),
+
+      }));
 
 
-        if (!player) {
-          continue;
+
+    if (rows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No valid players found.",
+        },
+        {
+          status: 400,
         }
-
-
-        insert.run({
-
-          player,
-
-          position:
-            String(row.position ?? "")
-              .toUpperCase()
-              .trim(),
-
-          team:
-            String(row.team ?? "")
-              .toUpperCase()
-              .trim(),
-
-          adp:
-            Number(row.adp ?? 0),
-
-          adpRank:
-            Number(row.adpRank ?? 0),
-
-          myRank:
-            Number(row.myRank ?? 0),
-
-          season:
-            importSeason,
-
-        });
-
-      }
-
-    });
+      );
+    }
 
 
 
-    transaction(players);
+    const { error } = await supabase
+      .from("fantasy_adp")
+      .upsert(
+        rows,
+        {
+          onConflict: "player,season",
+        }
+      );
+
+
+
+    if (error) {
+      throw error;
+    }
 
 
 
@@ -146,7 +129,7 @@ export async function POST(req: NextRequest) {
 
       success: true,
 
-      count: players.length,
+      count: rows.length,
 
       season: importSeason,
 
@@ -172,4 +155,5 @@ export async function POST(req: NextRequest) {
     );
 
   }
+
 }

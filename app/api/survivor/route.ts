@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveSurvivor } from "../../../lib/db/survivor";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+
+
+function formatTeamName(name: any) {
+  return String(name ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 
 export async function POST(req: NextRequest) {
@@ -40,25 +48,94 @@ export async function POST(req: NextRequest) {
 
 
 
-    let saved = 0;
+    const rows = picks
+      .filter(
+        (pick: any) =>
+          pick &&
+          typeof pick === "object"
+      )
+      .map(
+        (pick: any) => ({
+
+          week:
+            Number(pick.week ?? 0),
+
+
+          rank:
+            Number(pick.rank ?? 0),
+
+
+          gameId:
+            pick.gameId ?? null,
+
+
+          team:
+  formatTeamName(pick.team),
+
+
+opponent:
+  formatTeamName(pick.opponent),
+
+
+          confidence:
+            Number(pick.confidence ?? 0),
+
+
+          analysis:
+            String(pick.analysis ?? "")
+              .trim(),
+
+
+          kickoff:
+            String(pick.kickoff ?? "")
+              .trim(),
+
+
+          status:
+            String(pick.status ?? "draft")
+              .trim(),
+
+
+          result:
+            pick.result ?? null,
+
+
+          updatedAt:
+            new Date().toISOString(),
+
+        })
+      );
 
 
 
-    for (const pick of picks) {
+    if (rows.length === 0) {
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No valid survivor data supplied.",
+        },
+        {
+          status: 400,
+        }
+      );
+
+    }
 
 
-      if (
-        !pick ||
-        typeof pick !== "object"
-      ) {
-        continue;
-      }
+
+    const {
+      error,
+    } = await supabase
+      .from("survivor")
+      .upsert(rows, {
+        onConflict: "week,rank",
+      });
 
 
-      saveSurvivor(pick);
 
-      saved++;
-
+    if (error) {
+      throw error;
     }
 
 
@@ -66,7 +143,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        count: saved,
+        count: rows.length,
       }
     );
 

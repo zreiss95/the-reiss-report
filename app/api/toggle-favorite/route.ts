@@ -1,29 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+
+const CURRENT_SEASON = 2026;
 
 export async function POST(req: NextRequest) {
   try {
-
     const authError = await requireAdmin(req);
 
     if (authError) {
       return authError;
     }
 
+    const { players, season } = await req.json();
 
-    const {
-      player,
-      season,
-    } = await req.json();
-
-
-
-    if (!player || !season) {
+    if (!Array.isArray(players) || players.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: "Player and season are required.",
+          error: "No players supplied.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const importSeason =
+      Number(season) || CURRENT_SEASON;
+
+
+    if (importSeason !== CURRENT_SEASON) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid season.",
         },
         {
           status: 400,
@@ -32,70 +43,87 @@ export async function POST(req: NextRequest) {
     }
 
 
-
-    const current = db
-      .prepare(
-        `
-        SELECT favorite
-        FROM fantasy_adp
-        WHERE player = ?
-        AND season = ?
-        `
+    const rows = players
+      .filter(
+        (row: any) =>
+          row &&
+          typeof row === "object" &&
+          row.player
       )
-      .get(player, season) as { favorite: number } | undefined;
+      .map((row: any) => ({
+        player: String(row.player).trim(),
+
+        position:
+          String(row.position ?? "")
+            .toUpperCase()
+            .trim(),
+
+        team:
+          String(row.team ?? "")
+            .toUpperCase()
+            .trim(),
+
+        adp: Number(row.adp ?? 0),
+
+        adpRank: Number(row.adpRank ?? 0),
+
+        myRank: Number(row.myRank ?? 0),
+
+        favorite: 0,
+
+        tier: 3,
+
+        analysis: "",
+
+        season: importSeason,
+
+        updatedAt: new Date().toISOString(),
+      }));
 
 
-
-    if (!current) {
+    if (rows.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: "Player not found.",
+          error: "No valid players supplied.",
         },
         {
-          status: 404,
+          status: 400,
         }
       );
     }
 
 
+    const { error } = await supabase
+      .from("fantasy_adp")
+      .upsert(
+        rows,
+        {
+          onConflict: "player,season",
+        }
+      );
 
-    const newFavorite =
-      current.favorite ? 0 : 1;
 
-
-
-    db.prepare(
-      `
-      UPDATE fantasy_adp
-      SET 
-        favorite = ?,
-        updatedAt = datetime('now')
-      WHERE player = ?
-      AND season = ?
-      `
-    ).run(
-      newFavorite,
-      player,
-      season
-    );
-
+    if (error) {
+      throw error;
+    }
 
 
     return NextResponse.json({
 
       success: true,
 
-      favorite: newFavorite,
+      count: rows.length,
+
+      season: importSeason,
 
     });
-
 
 
   } catch (err: any) {
 
     console.error(
-      "Toggle favorite error:",
+      "Import ADP error:",
       err
     );
 

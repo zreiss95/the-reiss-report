@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { isAdminAuthenticated } from "../../lib/auth/admin";
 import LogoutButton from "./LogoutButton";
 
-
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 const cards = [
   {
     title: "🏈 Weekly Picks",
@@ -99,16 +100,17 @@ export default async function AdminHome() {
           >
 
             <div
-              style={{
-                background: "#172036",
-                border: "1px solid #24314f",
-                borderRadius: 18,
-                padding: 28,
-                minHeight: 170,
-                transition: ".2s",
-                cursor: "pointer",
-              }}
-            >
+  style={{
+    background: "#172036",
+    border: "1px solid #24314f",
+    borderRadius: 18,
+    padding: 28,
+    height: 170,
+    boxSizing: "border-box",
+    transition: ".2s",
+    cursor: "pointer",
+  }}
+>
 
               <h2
                 style={{

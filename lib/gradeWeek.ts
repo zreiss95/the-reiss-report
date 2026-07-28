@@ -1,40 +1,65 @@
-import { getPicks } from "./db/picks";
-import { updatePickResult } from "./db/gradePicks";
+import { getPicks } from "@/lib/db/picks";
+import { updatePickResult } from "@/lib/db/gradePicks";
 
 type Pick = {
   gameId: string;
   moneylinePick: string;
- atsPick: string;
-  spread: number;
-
-  totalPick?: string;
-  totalLine?: number;
+  atsPick: string;
+  spread?: number | null;
+  totalPick?: string | null;
+  totalLine?: number | null;
 };
 
-export async function gradeWeek(games: any[]) {
-  const picks = getPicks() as Pick[];
+export async function gradeWeek(
+  games: any[]
+) {
+  const picks = await getPicks() as Pick[];
 
   for (const game of games) {
-    if (game.status?.type?.completed !== true) continue;
+    if (
+      game.status?.type?.completed !== true
+    ) {
+      continue;
+    }
 
     const pick = picks.find(
-      (p) => p.gameId === game.id
+      (p) =>
+        p.gameId === game.id
     );
 
-    if (!pick) continue;
+    if (!pick) {
+      continue;
+    }
 
-    const competition = game.competitions[0];
+    const competition =
+      game.competitions?.[0];
 
-    const home = competition.competitors.find(
-      (c: any) => c.homeAway === "home"
-    );
+    if (!competition) {
+      continue;
+    }
 
-    const away = competition.competitors.find(
-      (c: any) => c.homeAway === "away"
-    );
+    const home =
+      competition.competitors?.find(
+        (c: any) =>
+          c.homeAway === "home"
+      );
 
-    const homeScore = Number(home.score);
-    const awayScore = Number(away.score);
+    const away =
+      competition.competitors?.find(
+        (c: any) =>
+          c.homeAway === "away"
+      );
+
+    if (!home || !away) {
+      continue;
+    }
+
+    const homeScore =
+      Number(home.score ?? 0);
+
+    const awayScore =
+      Number(away.score ?? 0);
+
 
     //
     // MONEYLINE
@@ -50,68 +75,94 @@ export async function gradeWeek(games: any[]) {
         ? "WIN"
         : "LOSS";
 
+
     //
     // ATS
     //
 
-    const spread = Number(pick.spread);
-
     let atsResult = "PUSH";
 
-    if (pick.atsPick === home.team.displayName) {
-      const adjusted = homeScore + spread;
+    if (
+      pick.spread != null &&
+      pick.atsPick
+    ) {
+      const spread =
+        Number(pick.spread);
 
-      if (adjusted > awayScore) {
-        atsResult = "WIN";
-      } else if (adjusted < awayScore) {
-        atsResult = "LOSS";
+      if (
+        pick.atsPick ===
+        home.team.displayName
+      ) {
+        const adjusted =
+          homeScore + spread;
+
+        if (adjusted > awayScore) {
+          atsResult = "WIN";
+        } else if (adjusted < awayScore) {
+          atsResult = "LOSS";
+        }
+
+      } else {
+
+        const adjusted =
+          awayScore + spread;
+
+        if (adjusted > homeScore) {
+          atsResult = "WIN";
+        } else if (adjusted < homeScore) {
+          atsResult = "LOSS";
+        }
       }
-    } else {
-      const adjusted = awayScore - spread;
+    }
 
-      if (adjusted > homeScore) {
-        atsResult = "WIN";
-      } else if (adjusted < homeScore) {
-        atsResult = "LOSS";
+
+    //
+    // TOTAL
+    //
+
+    const totalPoints =
+      homeScore + awayScore;
+
+    let totalResult = "PUSH";
+
+    if (
+      pick.totalPick &&
+      pick.totalLine != null
+    ) {
+
+      const line =
+        Number(pick.totalLine);
+
+      if (
+        pick.totalPick === "Over"
+      ) {
+        if (totalPoints > line) {
+          totalResult = "WIN";
+        } else if (totalPoints < line) {
+          totalResult = "LOSS";
+        }
+      }
+
+
+      if (
+        pick.totalPick === "Under"
+      ) {
+        if (totalPoints < line) {
+          totalResult = "WIN";
+        } else if (totalPoints > line) {
+          totalResult = "LOSS";
+        }
       }
     }
 
-//
-// TOTAL
-//
 
-const totalPoints = homeScore + awayScore;
-
-let totalResult = "PUSH";
-
-if (
-  pick.totalPick &&
-  pick.totalLine != null
-) {
-  if (pick.totalPick === "Over") {
-    if (totalPoints > pick.totalLine) {
-      totalResult = "WIN";
-    } else if (totalPoints < pick.totalLine) {
-      totalResult = "LOSS";
-    }
-  }
-
-  if (pick.totalPick === "Under") {
-    if (totalPoints < pick.totalLine) {
-      totalResult = "WIN";
-    } else if (totalPoints > pick.totalLine) {
-      totalResult = "LOSS";
-    }
-  }
-}
-
-updatePickResult(
-  game.id,
-  moneylineResult,
-  atsResult,
-  totalResult,
-  homeScore,
-  awayScore
-);
+    await updatePickResult(
+      game.id,
+      moneylineResult,
+      atsResult,
+      totalResult,
+      homeScore,
+      awayScore
+    );
   }
 }

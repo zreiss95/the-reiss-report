@@ -48,64 +48,143 @@ const selectedGame = games.find(
 
 const handleSave = async () => {
   if (!selectedGame || !competition || !home || !away) {
-  alert("Game data is unavailable.");
-  return;
-}
+    alert("Game data is unavailable.");
+    return;
+  }
 
-if (!moneylinePick || !atsPick) {
-  alert("Please select both a Moneyline and ATS pick before saving.");
-  return;
-}
+
+  if (!moneylinePick || !atsPick) {
+    alert("Please select both a Moneyline and ATS pick before saving.");
+    return;
+  }
+
+
+  const csrfToken =
+    document.cookie
+      .split("; ")
+      .find((row) =>
+        row.startsWith("admin-csrf-token=")
+      )
+      ?.split("=")[1];
+
+
+  console.log(
+    "CSRF TOKEN:",
+    csrfToken
+  );
+
+
   const response = await fetch("/api/picks", {
     method: "POST",
+
     headers: {
       "Content-Type": "application/json",
+      "x-csrf-token": csrfToken ?? "",
     },
-body: JSON.stringify({
-  gameId: selectedGame.id,
-  week: selectedGame.week.number,
 
-  away: away.team.displayName,
-  home: home.team.displayName,
+    body: JSON.stringify({
 
-  // ADD THESE TWO LINES
-  awayLogo: away.team.logo,
-  homeLogo: home.team.logo,
+      gameId:
+        selectedGame.id,
 
-  atsPick,
-  moneylinePick,
 
-spread: Number(spread),
-      totalLine: Number(totalLine),
-totalPick,
+      week:
+        selectedGame.week?.number ??
+        selectedGame.week ??
+        1,
 
-  confidence,
-  analysis,
-  kickoff: competition.date,
 
-  featuredMoneyline,
-featuredATS,
-featuredTotal,
+      away:
+        away.team.displayName,
 
-  // Optional improvement
-  status:
-    new Date() >= new Date(competition.date)
-      ? "Locked"
-      : "Open",
-})
+
+      home:
+        home.team.displayName,
+
+
+      awayLogo:
+        away.team.logo,
+
+
+      homeLogo:
+        home.team.logo,
+
+
+      atsPick,
+
+
+      moneylinePick,
+
+
+      spread:
+        Number(spread || 0),
+
+
+      totalLine:
+        Number(totalLine || 0),
+
+
+      totalPick,
+
+
+      confidence,
+
+
+      analysis,
+
+
+      kickoff:
+        competition.date,
+
+
+      featuredMoneyline,
+
+
+      featuredATS,
+
+
+      featuredTotal,
+
+
+      status:
+        new Date() >= new Date(competition.date)
+          ? "Locked"
+          : "Open",
+
+    }),
   });
 
+
+
+  const result =
+    await response.json();
+
+
+
+ 
+
+
+
   if (response.ok) {
+
     setSaved(true);
+
 
     setTimeout(() => {
       setSaved(false);
     }, 2000);
+
+
   } else {
-    alert("Failed to save pick.");
+
+    alert(
+      result.error ||
+      result.message ||
+      "Failed to save pick."
+    );
+
   }
 };
-
   return (
     <div>
         <h2

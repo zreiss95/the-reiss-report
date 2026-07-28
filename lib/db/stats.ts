@@ -1,4 +1,4 @@
-import db from "./db";
+import { supabase } from "@/lib/supabase";
 
 
 function safeNumber(
@@ -38,81 +38,87 @@ function calculatePercentage(
 
 
 
-export function getSeasonStats() {
+export async function getSeasonStats() {
 
-  const ml =
-    db.prepare(`
-      SELECT
-
-        SUM(moneylineResult = 'WIN') AS wins,
-
-        SUM(moneylineResult = 'LOSS') AS losses
-
-      FROM picks
-    `)
-    .get() as any;
-
+  const { data: picks, error } =
+    await supabase
+      .from("picks")
+      .select(
+        `
+        moneylineresult,
+        atsresult,
+        totalresult
+        `
+      );
 
 
-  const ats =
-    db.prepare(`
-      SELECT
-
-        SUM(atsResult = 'WIN') AS wins,
-
-        SUM(atsResult = 'LOSS') AS losses,
-
-        SUM(atsResult = 'PUSH') AS pushes
-
-      FROM picks
-    `)
-    .get() as any;
+  if (error) {
+    throw error;
+  }
 
 
 
-  const total =
-    db.prepare(`
-      SELECT
-
-        SUM(totalResult = 'WIN') AS wins,
-
-        SUM(totalResult = 'LOSS') AS losses,
-
-        SUM(totalResult = 'PUSH') AS pushes
-
-      FROM picks
-    `)
-    .get() as any;
+  const rows =
+    picks ?? [];
 
 
 
   const mlWins =
-    safeNumber(ml.wins);
+    rows.filter(
+      (row: any) =>
+        row.moneylineresult === "WIN"
+    ).length;
+
 
   const mlLosses =
-    safeNumber(ml.losses);
+    rows.filter(
+      (row: any) =>
+        row.moneylineresult === "LOSS"
+    ).length;
 
 
 
   const atsWins =
-    safeNumber(ats.wins);
+    rows.filter(
+      (row: any) =>
+        row.atsresult === "WIN"
+    ).length;
+
 
   const atsLosses =
-    safeNumber(ats.losses);
+    rows.filter(
+      (row: any) =>
+        row.atsresult === "LOSS"
+    ).length;
+
 
   const atsPushes =
-    safeNumber(ats.pushes);
+    rows.filter(
+      (row: any) =>
+        row.atsresult === "PUSH"
+    ).length;
 
 
 
   const totalWins =
-    safeNumber(total.wins);
+    rows.filter(
+      (row: any) =>
+        row.totalresult === "WIN"
+    ).length;
+
 
   const totalLosses =
-    safeNumber(total.losses);
+    rows.filter(
+      (row: any) =>
+        row.totalresult === "LOSS"
+    ).length;
+
 
   const totalPushes =
-    safeNumber(total.pushes);
+    rows.filter(
+      (row: any) =>
+        row.totalresult === "PUSH"
+    ).length;
 
 
 
@@ -193,140 +199,91 @@ export function getSeasonStats() {
 
 
 
-export function getFeaturedStats(
+export async function getFeaturedStats(
   week?: number
 ) {
 
 
-  const where =
-    week !== undefined
-      ? "WHERE week <= ?"
-      : "";
+  let query =
+    supabase
+      .from("picks")
+      .select(
+        `
+        week,
+        featuredmoneyline,
+        featuredats,
+        featuredtotal,
+        moneylineresult,
+        atsresult,
+        totalresult
+        `
+      );
 
 
-  const params =
-    week !== undefined
-      ? [Number(week)]
-      : [];
+
+  if (week !== undefined) {
+
+    query =
+      query.lte(
+        "week",
+        Number(week)
+      );
+
+  }
+
+
+
+  const { data: picks, error } =
+    await query;
+
+
+
+  if (error) {
+    throw error;
+  }
+
+
+
+  const rows =
+    picks ?? [];
+
+
+
+  const featured =
+    (
+      column: string,
+      resultColumn: string
+    ) => {
+
+      return rows.filter(
+        (row: any) =>
+          row[column] === 1 &&
+          row[resultColumn]
+      );
+
+    };
 
 
 
   const ml =
-    db.prepare(`
-      SELECT
-
-        SUM(
-          CASE
-            WHEN featuredMoneyline = 1
-            AND moneylineResult = 'WIN'
-            THEN 1
-            ELSE 0
-          END
-        ) AS wins,
-
-
-        SUM(
-          CASE
-            WHEN featuredMoneyline = 1
-            AND moneylineResult = 'LOSS'
-            THEN 1
-            ELSE 0
-          END
-        ) AS losses
-
-
-      FROM picks
-
-      ${where}
-
-    `)
-    .get(...params) as any;
-
+    featured(
+      "featuredmoneyline",
+      "moneylineresult"
+    );
 
 
   const ats =
-    db.prepare(`
-      SELECT
-
-        SUM(
-          CASE
-            WHEN featuredATS = 1
-            AND atsResult = 'WIN'
-            THEN 1
-            ELSE 0
-          END
-        ) AS wins,
-
-
-        SUM(
-          CASE
-            WHEN featuredATS = 1
-            AND atsResult = 'LOSS'
-            THEN 1
-            ELSE 0
-          END
-        ) AS losses,
-
-
-        SUM(
-          CASE
-            WHEN featuredATS = 1
-            AND atsResult = 'PUSH'
-            THEN 1
-            ELSE 0
-          END
-        ) AS pushes
-
-
-      FROM picks
-
-      ${where}
-
-    `)
-    .get(...params) as any;
-
+    featured(
+      "featuredats",
+      "atsresult"
+    );
 
 
   const total =
-    db.prepare(`
-      SELECT
-
-        SUM(
-          CASE
-            WHEN featuredTotal = 1
-            AND totalResult = 'WIN'
-            THEN 1
-            ELSE 0
-          END
-        ) AS wins,
-
-
-        SUM(
-          CASE
-            WHEN featuredTotal = 1
-            AND totalResult = 'LOSS'
-            THEN 1
-            ELSE 0
-          END
-        ) AS losses,
-
-
-        SUM(
-          CASE
-            WHEN featuredTotal = 1
-            AND totalResult = 'PUSH'
-            THEN 1
-            ELSE 0
-          END
-        ) AS pushes
-
-
-      FROM picks
-
-      ${where}
-
-    `)
-    .get(...params) as any;
+    featured(
+      "featuredtotal",
+      "totalresult"
+    );
 
 
 
@@ -335,10 +292,17 @@ export function getFeaturedStats(
     moneyline: {
 
       wins:
-        safeNumber(ml.wins),
+        ml.filter(
+          (row:any)=>
+            row.moneylineresult === "WIN"
+        ).length,
+
 
       losses:
-        safeNumber(ml.losses),
+        ml.filter(
+          (row:any)=>
+            row.moneylineresult === "LOSS"
+        ).length,
 
     },
 
@@ -346,13 +310,24 @@ export function getFeaturedStats(
     ats: {
 
       wins:
-        safeNumber(ats.wins),
+        ats.filter(
+          (row:any)=>
+            row.atsresult === "WIN"
+        ).length,
+
 
       losses:
-        safeNumber(ats.losses),
+        ats.filter(
+          (row:any)=>
+            row.atsresult === "LOSS"
+        ).length,
+
 
       pushes:
-        safeNumber(ats.pushes),
+        ats.filter(
+          (row:any)=>
+            row.atsresult === "PUSH"
+        ).length,
 
     },
 
@@ -360,13 +335,24 @@ export function getFeaturedStats(
     total: {
 
       wins:
-        safeNumber(total.wins),
+        total.filter(
+          (row:any)=>
+            row.totalresult === "WIN"
+        ).length,
+
 
       losses:
-        safeNumber(total.losses),
+        total.filter(
+          (row:any)=>
+            row.totalresult === "LOSS"
+        ).length,
+
 
       pushes:
-        safeNumber(total.pushes),
+        total.filter(
+          (row:any)=>
+            row.totalresult === "PUSH"
+        ).length,
 
     },
 

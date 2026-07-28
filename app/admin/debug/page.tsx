@@ -1,22 +1,40 @@
-import db from "../../../lib/db/db";
+import { supabase } from "@/lib/supabase";
 
-export default function DebugPage() {
-  const players = db.prepare(`
-    SELECT
+export default async function DebugPage() {
+
+  const { data: players, error } = await supabase
+    .from("players")
+    .select(`
       name,
       team,
-      headshot
-    FROM players
-    LIMIT 25
-  `).all();
+      position
+    `)
+    .limit(10);
+
 
   return (
-    <main style={{ padding: 40, color: "white" }}>
-      <h1>Players</h1>
+    <div style={{ padding: 20 }}>
+
+      <h1>
+        Database Debug
+      </h1>
+
+
+      {error && (
+        <pre>
+          {error.message}
+        </pre>
+      )}
+
 
       <pre>
-        {JSON.stringify(players, null, 2)}
+        {JSON.stringify(
+          players,
+          null,
+          2
+        )}
       </pre>
-    </main>
+
+    </div>
   );
 }

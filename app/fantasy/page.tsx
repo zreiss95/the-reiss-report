@@ -1,8 +1,11 @@
-import FantasyRankingBoard from "../../lib/components/fantasy/FantasyRankingBoard";
-import { getFantasyADP } from "../../lib/db/fantasyADP";
+import FantasyRankingBoard from "@/lib/components/fantasy/FantasyRankingBoard";
+import { getFantasyADP } from "@/lib/db/fantasyADP";
 
-export default function FantasyPage() {
-  const rankings = getFantasyADP();
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function FantasyPage() {
+  const rankings = await getFantasyADP();
 
   return (
     <main
@@ -32,7 +35,9 @@ export default function FantasyPage() {
         Compare FantasyPros ADP against my draft board.
       </p>
 
-      <FantasyRankingBoard rankings={rankings} />
+      <FantasyRankingBoard
+        rankings={rankings}
+      />
     </main>
   );
 }

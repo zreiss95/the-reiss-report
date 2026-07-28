@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 export async function POST(req: NextRequest) {
   try {
-
     const authError = await requireAdmin(req);
 
     if (authError) {
@@ -50,53 +49,50 @@ export async function POST(req: NextRequest) {
 
 
 
-    const result = db.prepare(`
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("player_rankings")
+      .update({
 
-      UPDATE player_rankings
+        player:
+          String(player)
+            .trim(),
 
-      SET
+        team:
+          String(team ?? "")
+            .toUpperCase()
+            .trim(),
 
-        player = @player,
+        position:
+          String(position ?? "")
+            .toUpperCase()
+            .trim(),
 
-        team = @team,
+        updatedAt:
+          new Date().toISOString(),
 
-        position = @position,
-
-        updatedAt = datetime('now')
-
-
-      WHERE
-
-        player = @originalPlayer
-
-        AND season = @season
-
-    `)
-    .run({
-
-      originalPlayer,
-
-      player:
-        String(player)
-          .trim(),
-
-      team:
-        String(team ?? "")
-          .toUpperCase()
-          .trim(),
-
-      position:
-        String(position ?? "")
-          .toUpperCase()
-          .trim(),
-
-      season,
-
-    });
+      })
+      .eq(
+        "player",
+        originalPlayer
+      )
+      .eq(
+        "season",
+        season
+      )
+      .select("id");
 
 
 
-    if (result.changes === 0) {
+    if (error) {
+      throw error;
+    }
+
+
+
+    if (!data || data.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -115,7 +111,7 @@ export async function POST(req: NextRequest) {
       success: true,
 
       updated:
-        result.changes,
+        data.length,
 
     });
 

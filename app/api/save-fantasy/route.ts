@@ -1,24 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+
+
+const CURRENT_SEASON = 2026;
 
 
 export async function POST(req: NextRequest) {
 
-  const authenticated =
+  const authError =
     await requireAdmin(req);
 
 
-  if (!authenticated) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unauthorized",
-      },
-      {
-        status: 401,
-      }
-    );
+  if (authError) {
+    return authError;
   }
 
 
@@ -30,7 +25,9 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
 
+
     if (!Array.isArray(rankings)) {
+
       return NextResponse.json(
         {
           success: false,
@@ -40,132 +37,134 @@ export async function POST(req: NextRequest) {
           status: 400,
         }
       );
+
     }
 
 
-    const update = db.prepare(`
 
-      UPDATE fantasy_adp
-
-      SET
-
-        player = @newPlayer,
-
-        team = @team,
-
-        position = @position,
-
-
-        myRank = @myRank,
-
-        favorite = @favorite,
-
-        tier = @tier,
-
-        analysis = @analysis,
-
-
-        updatedAt = datetime('now'),
-
-
-        locked =
-          CASE
-            WHEN @lock = 1
-            THEN 1
-            ELSE locked
-          END,
-
-
-        lockedAt =
-          CASE
-            WHEN @lock = 1
-            THEN datetime('now')
-            ELSE lockedAt
-          END
-
-
-      WHERE
-
-        player = @oldPlayer
-
-        AND season = @season
-
-    `);
+    let updated = 0;
 
 
 
-    const transaction =
-      db.transaction((rows: any[]) => {
+    for (const row of rankings) {
 
 
-        for (const row of rows) {
-
-
-          update.run({
-
-            oldPlayer:
-              row.originalPlayer ??
-              row.player,
-
-
-            newPlayer:
-              String(
-                row.player ?? ""
-              ).trim(),
-
-
-            team:
-              String(
-                row.team ?? ""
-              )
-              .toUpperCase()
-              .trim(),
-
-
-            position:
-              String(
-                row.position ?? ""
-              )
-              .toUpperCase()
-              .trim(),
-
-
-            myRank:
-              Number(
-                row.myRank ?? 0
-              ),
-
-
-            favorite:
-              row.favorite ?? 0,
-
-
-            tier:
-              row.tier ?? 3,
-
-
-            analysis:
-              row.analysis ?? "",
-
-
-            season:
-              row.season ?? 2026,
-
-
-            lock:
-              lock ? 1 : 0,
-
-          });
-
-
-        }
-
-
-      });
+      if (
+        !row ||
+        typeof row !== "object"
+      ) {
+        continue;
+      }
 
 
 
-    transaction(rankings);
+      const player =
+        String(row.player ?? "")
+          .trim();
+
+
+
+      if (!player) {
+        continue;
+      }
+
+
+
+      const updateData: any = {
+
+        player,
+
+        team:
+          String(row.team ?? "")
+            .toUpperCase()
+            .trim(),
+
+
+        position:
+          String(row.position ?? "")
+            .toUpperCase()
+            .trim(),
+
+
+        myRank:
+          Number(row.myRank ?? null),
+
+
+        favorite:
+          Number(row.favorite ?? 0),
+
+
+        tier:
+          Number(row.tier ?? 3),
+
+
+        analysis:
+          String(row.analysis ?? ""),
+
+
+        updatedAt:
+          new Date().toISOString(),
+
+      };
+
+
+
+      if (lock) {
+
+        updateData.locked = 1;
+
+        updateData.lockedAt =
+          new Date().toISOString();
+
+      }
+
+
+
+      let query =
+        supabase
+          .from("fantasy_adp")
+          .update(updateData)
+          .eq(
+            "season",
+            CURRENT_SEASON
+          );
+
+
+
+      if (row.id) {
+
+        query =
+          query.eq(
+            "id",
+            Number(row.id)
+          );
+
+      } else {
+
+        query =
+          query.eq(
+            "player",
+            row.originalPlayer ?? player
+          );
+
+      }
+
+
+
+      const { error } =
+        await query;
+
+
+
+      if (error) {
+        throw error;
+      }
+
+
+
+      updated++;
+
+    }
 
 
 
@@ -173,10 +172,10 @@ export async function POST(req: NextRequest) {
 
       success: true,
 
-      count:
-        rankings.length,
+      count: updated,
 
     });
+
 
 
   } catch (err: any) {

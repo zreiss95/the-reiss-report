@@ -1,9 +1,7 @@
-import db from "./db";
+import { supabase } from "@/lib/supabase";
 
 
-function validatePickData(
-  data: any
-) {
+function validatePickData(data: any) {
 
   if (!data || typeof data !== "object") {
     throw new Error(
@@ -21,69 +19,83 @@ function validatePickData(
 
   return {
 
-    gameId:
+    gameid:
       String(data.gameId)
-      .trim(),
+        .trim(),
 
     week:
       Number(data.week ?? 0),
 
+
     away:
       String(data.away ?? "")
-      .toUpperCase()
-      .trim(),
+        .trim(),
+
 
     home:
       String(data.home ?? "")
-      .toUpperCase()
-      .trim(),
+        .trim(),
 
-    awayLogo:
+
+    awaylogo:
       data.awayLogo ?? null,
 
-    homeLogo:
+
+    homelogo:
       data.homeLogo ?? null,
 
-    moneylinePick:
-      String(data.moneylinePick ?? "")
-      .trim(),
 
-    atsPick:
+    moneylinepick:
+      String(data.moneylinePick ?? "")
+        .trim(),
+
+
+    atspick:
       String(data.atsPick ?? "")
-      .trim(),
+        .trim(),
+
 
     spread:
       Number(data.spread ?? 0),
 
-    totalPick:
-      String(data.totalPick ?? "")
-      .trim(),
 
-    totalLine:
+    totalpick:
+      String(data.totalPick ?? "")
+        .trim(),
+
+
+    totalline:
       Number(data.totalLine ?? 0),
+
 
     confidence:
       Number(data.confidence ?? 0),
 
+
     analysis:
       String(data.analysis ?? "")
-      .trim(),
+        .trim(),
+
 
     kickoff:
       String(data.kickoff ?? "")
-      .trim(),
+        .trim(),
+
 
     status:
       String(data.status ?? "draft")
-      .trim(),
+        .trim(),
 
-    featuredMoneyline:
+
+    featuredmoneyline:
       data.featuredMoneyline ? 1 : 0,
 
-    featuredATS:
+
+    featuredats:
       data.featuredATS ? 1 : 0,
 
-    featuredTotal:
+
+    featuredtotal:
       data.featuredTotal ? 1 : 0,
 
   };
@@ -92,7 +104,7 @@ function validatePickData(
 
 
 
-export function savePick(
+export async function savePick(
   data: any
 ) {
 
@@ -100,157 +112,81 @@ export function savePick(
     validatePickData(data);
 
 
+  const { error } =
+    await supabase
+      .from("picks")
+      .upsert(
+        {
+          ...row,
 
-  db.prepare(
-    `
-    INSERT INTO picks (
+          updatedat:
+            new Date().toISOString(),
 
-      gameId,
-      week,
-
-      away,
-      home,
-
-      awayLogo,
-      homeLogo,
-
-      moneylinePick,
-      atsPick,
-
-      spread,
-
-      totalPick,
-      totalLine,
-
-      confidence,
-
-      analysis,
-
-      kickoff,
-
-      status,
-
-      featuredMoneyline,
-      featuredATS,
-      featuredTotal,
-
-      updatedAt
-
-    )
-
-    VALUES (
-
-      @gameId,
-      @week,
-
-      @away,
-      @home,
-
-      @awayLogo,
-      @homeLogo,
-
-      @moneylinePick,
-      @atsPick,
-
-      @spread,
-
-      @totalPick,
-      @totalLine,
-
-      @confidence,
-
-      @analysis,
-
-      @kickoff,
-
-      @status,
-
-      @featuredMoneyline,
-      @featuredATS,
-      @featuredTotal,
-
-      datetime('now')
-
-    )
+        },
+        {
+          onConflict:
+            "gameid",
+        }
+      );
 
 
-    ON CONFLICT(gameId)
-
-    DO UPDATE SET
-
-      away = excluded.away,
-      home = excluded.home,
-
-      awayLogo = excluded.awayLogo,
-      homeLogo = excluded.homeLogo,
-
-      moneylinePick = excluded.moneylinePick,
-      atsPick = excluded.atsPick,
-
-      spread = excluded.spread,
-
-      totalPick = excluded.totalPick,
-      totalLine = excluded.totalLine,
-
-      confidence = excluded.confidence,
-
-      analysis = excluded.analysis,
-
-      kickoff = excluded.kickoff,
-
-      status = excluded.status,
-
-      featuredMoneyline = excluded.featuredMoneyline,
-      featuredATS = excluded.featuredATS,
-      featuredTotal = excluded.featuredTotal,
-
-      updatedAt = datetime('now')
-
-    `
-  )
-  .run(row);
+  if (error) {
+    throw error;
+  }
 
 }
 
 
 
-export function getPicks(
+export async function getPicks(
   week?: number
 ) {
 
+  let query =
+    supabase
+      .from("picks")
+      .select("*")
+      .order(
+        "week",
+        {
+          ascending: false,
+        }
+      )
+      .order(
+        "away",
+        {
+          ascending: true,
+        }
+      );
+
+
   if (week !== undefined) {
 
-    return db
-      .prepare(
-        `
-        SELECT *
-        FROM picks
-        WHERE week = ?
-        ORDER BY away ASC
-        `
-      )
-      .all(
+    query =
+      query.eq(
+        "week",
         Number(week)
       );
 
   }
 
 
-  return db
-    .prepare(
-      `
-      SELECT *
-      FROM picks
-      ORDER BY week DESC, away ASC
-      `
-    )
-    .all();
+  const { data, error } =
+    await query;
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data ?? [];
 
 }
 
 
 
-export function getPick(
+export async function getPick(
   gameId: string
 ) {
 
@@ -259,66 +195,79 @@ export function getPick(
   }
 
 
-  return db
-    .prepare(
-      `
-      SELECT *
-      FROM picks
-      WHERE gameId = ?
-      LIMIT 1
-      `
-    )
-    .get(
-      gameId.trim()
-    );
+  const { data, error } =
+    await supabase
+      .from("picks")
+      .select("*")
+      .eq(
+        "gameid",
+        gameId.trim()
+      )
+      .limit(1)
+      .maybeSingle();
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data;
 
 }
 
 
 
-export function getFeaturedPicks(
+export async function getFeaturedPicks(
   week?: number
-): {
-  moneyline: any;
-  ats: any;
-  total: any;
-} {
+) {
 
-
-  const getFeatured = (
+  const getFeatured = async (
     column: string
   ) => {
 
+    let query =
+      supabase
+        .from("picks")
+        .select("*")
+        .eq(
+          column,
+          1
+        )
+        .limit(1);
+
+
     if (week !== undefined) {
 
-      return db
-        .prepare(
-          `
-          SELECT *
-          FROM picks
-          WHERE ${column} = 1
-          AND week = ?
-          LIMIT 1
-          `
-        )
-        .get(
+      query =
+        query.eq(
+          "week",
           Number(week)
+        );
+
+    } else {
+
+      query =
+        query.order(
+          "week",
+          {
+            ascending:false,
+          }
         );
 
     }
 
 
-    return db
-      .prepare(
-        `
-        SELECT *
-        FROM picks
-        WHERE ${column} = 1
-        ORDER BY week DESC
-        LIMIT 1
-        `
-      )
-      .get();
+    const { data, error } =
+      await query;
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    return data?.[0] ?? null;
 
   };
 
@@ -326,18 +275,20 @@ export function getFeaturedPicks(
   return {
 
     moneyline:
-      getFeatured(
-        "featuredMoneyline"
+      await getFeatured(
+        "featuredmoneyline"
       ),
+
 
     ats:
-      getFeatured(
-        "featuredATS"
+      await getFeatured(
+        "featuredats"
       ),
 
+
     total:
-      getFeatured(
-        "featuredTotal"
+      await getFeatured(
+        "featuredtotal"
       ),
 
   };
@@ -346,20 +297,38 @@ export function getFeaturedPicks(
 
 
 
-export function getAvailableWeeks() {
+export async function getAvailableWeeks() {
 
-  return db
-    .prepare(
-      `
-      SELECT DISTINCT week
-      FROM picks
-      ORDER BY week DESC
-      `
-    )
-    .all()
-    .map(
-      (row: any) =>
-        row.week
-    );
+  const { data, error } =
+    await supabase
+      .from("picks")
+      .select("week")
+      .order(
+        "week",
+        {
+          ascending:false,
+        }
+      );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return [
+    ...new Set(
+      (data ?? [])
+        .map(
+          (row:any)=>
+            row.week
+        )
+        .filter(
+          (week)=>
+            week !== null &&
+            week !== undefined
+        )
+    ),
+  ];
 
 }

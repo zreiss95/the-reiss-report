@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import RankingBoard from "@/lib/components/RankingBoard";
 import { getRankings } from "@/lib/db/playerRankings";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const VALID_POSITIONS = [
   "QB",
   "RB",
@@ -12,20 +15,27 @@ const VALID_POSITIONS = [
   "DEF",
 ];
 
-export default function PlayerPositionPage({
+export default async function PlayerPositionPage({
   params,
 }: {
   params: {
     position: string;
   };
 }) {
-  const position = params.position.toUpperCase();
+  const position =
+    params.position
+      .toUpperCase()
+      .trim();
+
 
   if (!VALID_POSITIONS.includes(position)) {
     notFound();
   }
 
-const rankings = getRankings(position);
+
+  const rankings =
+    await getRankings(position);
+
 
   return (
     <main
@@ -46,6 +56,7 @@ const rankings = getRankings(position);
         🏈 {position} Rankings
       </h1>
 
+
       <p
         style={{
           color: "#94a3b8",
@@ -56,10 +67,12 @@ const rankings = getRankings(position);
         NFL.com vs Your Rankings
       </p>
 
+
       <RankingBoard
         position={position}
         rankings={rankings}
       />
+
     </main>
   );
 }

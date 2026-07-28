@@ -2,8 +2,11 @@ import TeamRankingBoard from "@/lib/components/team/TeamRankingBoard";
 import TeamRankingsImporter from "@/lib/components/team/TeamRankingsImporter";
 import { getTeamRankings } from "@/lib/db/teamRankings";
 
-export default function TeamRankingsPage() {
-  const rankings = getTeamRankings();
+export default async function TeamRankingsPage() {
+
+  const rankings =
+    await getTeamRankings();
+
 
   return (
     <main
@@ -24,6 +27,7 @@ export default function TeamRankingsPage() {
         NFL Team Rankings
       </h1>
 
+
       <p
         style={{
           color: "#94a3b8",
@@ -33,11 +37,18 @@ export default function TeamRankingsPage() {
         Rank all 32 NFL teams before the season.
       </p>
 
+
       <TeamRankingsImporter />
+
 
       <div style={{ height: 30 }} />
 
-      <TeamRankingBoard rankings={rankings} editable={true} />
+
+      <TeamRankingBoard
+        rankings={rankings}
+        editable={true}
+      />
+
     </main>
   );
 }

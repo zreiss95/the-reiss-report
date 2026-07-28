@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveLoserSurvivor } from "../../../lib/db/loserSurvivor";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
+
+
+function formatTeamName(name: any) {
+  return String(name ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 
 export async function POST(req: NextRequest) {
@@ -20,7 +28,6 @@ export async function POST(req: NextRequest) {
       await req.json();
 
 
-
     if (
       !Array.isArray(picks) ||
       picks.length === 0
@@ -29,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "No picks supplied.",
+          error: "No loser survivor data supplied.",
         },
         {
           status: 400,
@@ -39,45 +46,125 @@ export async function POST(req: NextRequest) {
     }
 
 
+    const rows =
+      picks
+        .filter(
+          (pick: any) =>
+            pick &&
+            typeof pick === "object"
+        )
+        .map(
+          (pick: any) => ({
 
-    let saved = 0;
-
-
-
-    for (const pick of picks) {
-
-
-      if (
-        !pick ||
-        typeof pick !== "object"
-      ) {
-        continue;
-      }
+            week:
+              Number(pick.week ?? 0),
 
 
+            rank:
+              Number(pick.rank ?? 0),
 
-      saveLoserSurvivor(pick);
 
-      saved++;
+            gameId:
+              String(pick.gameId ?? "")
+                .trim(),
+
+
+            team:
+              formatTeamName(
+                pick.team
+              ),
+
+
+            opponent:
+              formatTeamName(
+                pick.opponent
+              ),
+
+
+            confidence:
+              Number(
+                pick.confidence ?? 0
+              ),
+
+
+            analysis:
+              String(
+                pick.analysis ?? ""
+              )
+              .trim(),
+
+
+            kickoff:
+              String(
+                pick.kickoff ?? ""
+              )
+              .trim(),
+
+
+            status:
+              String(
+                pick.status ?? "Draft"
+              )
+              .trim(),
+
+
+            result:
+              pick.result ?? null,
+
+
+            updatedAt:
+              new Date().toISOString(),
+
+          })
+        );
+
+
+    if (rows.length === 0) {
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No valid loser survivor data supplied.",
+        },
+        {
+          status: 400,
+        }
+      );
 
     }
 
+
+    const {
+      error
+    } =
+      await supabase
+        .from("loser_survivor")
+        .upsert(
+          rows,
+          {
+            onConflict:
+              "week,rank",
+          }
+        );
+
+
+    if (error) {
+      throw error;
+    }
 
 
     return NextResponse.json(
       {
         success: true,
-        count: saved,
+        count: rows.length,
       }
     );
 
 
-
   } catch (err: any) {
 
-
     console.error(
-      "Loser survivor save error:",
+      "Save loser survivor error:",
       err
     );
 
@@ -85,7 +172,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: err.message,
+        error:
+          err.message,
       },
       {
         status: 500,

@@ -37,6 +37,15 @@ editable = false,
 
   const [search, setSearch] = useState("");
 
+function getCsrfToken() {
+  return document.cookie
+    .split("; ")
+    .find((row) =>
+      row.startsWith("admin-csrf-token=")
+    )
+    ?.split("=")[1];
+}
+
   useEffect(() => {
     setMyRankings(rankings.map((p) => ({ ...p })));
   }, [rankings]);
@@ -83,11 +92,19 @@ const filteredMyRankings = myRankings.filter((team) => {
 
     setMyRankings(reordered);
 
-    fetch("/api/save-team-rankings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const csrf = getCsrfToken();
+
+fetch("/api/save-team-rankings", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+
+    ...(csrf
+      ? {
+          "x-csrf-token": csrf,
+        }
+      : {}),
+  },
       body: JSON.stringify({
         rankings: reordered,
         lock: false,
@@ -96,11 +113,20 @@ const filteredMyRankings = myRankings.filter((team) => {
   }
 
   async function saveRankings() {
-    const res = await fetch("/api/save-team-rankings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+
+  const csrf = getCsrfToken();
+
+  const res = await fetch("/api/save-team-rankings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+
+      ...(csrf
+        ? {
+            "x-csrf-token": csrf,
+          }
+        : {}),
+    },
       body: JSON.stringify({
         rankings: myRankings,
         lock: false,
@@ -126,11 +152,19 @@ const filteredMyRankings = myRankings.filter((team) => {
       return;
     }
 
-    const res = await fetch("/api/save-team-rankings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const csrf = getCsrfToken();
+
+const res = await fetch("/api/save-team-rankings", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+
+    ...(csrf
+      ? {
+          "x-csrf-token": csrf,
+        }
+      : {}),
+  },
       body: JSON.stringify({
         rankings: myRankings,
         lock: true,

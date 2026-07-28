@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 const CURRENT_SEASON = 2026;
 
-interface ExistingPlayer {
-  id: number;
-}
 
 export async function POST(req: NextRequest) {
+
   try {
+
     const authError = await requireAdmin(req);
 
     if (authError) {
@@ -34,172 +33,109 @@ export async function POST(req: NextRequest) {
 
 
 
-    const findExisting = db.prepare(`
-      SELECT id
-      FROM player_rankings
-      WHERE player = @player
-      AND season = @season
-    `);
+    const rows = players
+      .map((row: any, index: number) => {
+
+        if (!row || typeof row !== "object") {
+          return null;
+        }
 
 
-
-    const updateExisting = db.prepare(`
-      UPDATE player_rankings
-
-      SET
-
-        player = @player,
-        position = @position,
-        team = @team,
-        consensusRank = @consensusRank,
-        myRank = @myRank,
-        analysis = @analysis,
-        updatedAt = datetime('now')
-
-      WHERE
-
-        id = @id
-
-    `);
+        const position =
+          String(row.position ?? "")
+            .toUpperCase()
+            .trim();
 
 
-
-    const insertNew = db.prepare(`
-      INSERT INTO player_rankings (
-
-        playerId,
-        player,
-        position,
-        team,
-        consensusRank,
-        myRank,
-        analysis,
-        season,
-        updatedAt
-
-      )
-
-      VALUES (
-
-        @playerId,
-        @player,
-        @position,
-        @team,
-        @consensusRank,
-        @myRank,
-        @analysis,
-        @season,
-        datetime('now')
-
-      )
-    `);
+        const player =
+          String(row.player ?? "")
+            .trim();
 
 
-
-    const transaction = db.transaction(
-      (rows: any[]) => {
-
-        rows.forEach((row, index) => {
-
-          if (!row || typeof row !== "object") {
-            return;
-          }
+        if (!player) {
+          return null;
+        }
 
 
+        return {
 
-          const position =
-            String(row.position ?? "")
+          playerId:
+            row.playerId ??
+            `${CURRENT_SEASON}-${position}-${index + 1}`,
+
+
+          player,
+
+
+          position,
+
+
+          team:
+            String(row.team ?? "")
               .toUpperCase()
-              .trim();
+              .trim(),
+
+
+          consensusRank:
+            Number(
+              row.consensusRank ?? index + 1
+            ),
+
+
+          myRank:
+            Number(
+              row.myRank ?? index + 1
+            ),
+
+
+          analysis:
+            String(
+              row.analysis ?? ""
+            ),
+
+
+          season:
+            CURRENT_SEASON,
+
+
+          updatedAt:
+            new Date().toISOString(),
+
+        };
+
+      })
+      .filter(Boolean);
 
 
 
-          const player =
-            String(row.player ?? "")
-              .trim();
+    if (rows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No valid players found.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
 
 
-          if (!player) {
-            return;
-          }
+    const { error } = await supabase
+      .from("player_rankings")
+      .upsert(
+        rows,
+        {
+          onConflict: "player,season",
+        }
+      );
 
 
 
-          const data = {
-
-            playerId:
-              row.playerId ??
-              `${CURRENT_SEASON}-${position}-${index + 1}`,
-
-
-            player,
-
-
-            position,
-
-
-            team:
-              String(row.team ?? "")
-                .toUpperCase()
-                .trim(),
-
-
-            consensusRank:
-              Number(
-                row.consensusRank ?? index + 1
-              ),
-
-
-            myRank:
-              Number(
-                row.myRank ?? index + 1
-              ),
-
-
-            analysis:
-              String(
-                row.analysis ?? ""
-              ),
-
-
-            season:
-              CURRENT_SEASON,
-
-          };
-
-
-
-          const existing =
-            findExisting.get({
-              player: data.player,
-              season: CURRENT_SEASON,
-            }) as ExistingPlayer | undefined;
-
-
-
-          if (existing) {
-
-            updateExisting.run({
-              id: existing.id,
-              ...data,
-            });
-
-
-          } else {
-
-            insertNew.run(data);
-
-          }
-
-        });
-
-      }
-    );
-
-
-
-    transaction(players);
+    if (error) {
+      throw error;
+    }
 
 
 
@@ -207,7 +143,7 @@ export async function POST(req: NextRequest) {
 
       success: true,
 
-      count: players.length,
+      count: rows.length,
 
       season: CURRENT_SEASON,
 
@@ -217,7 +153,10 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
 
-    console.error("Import consensus error:", err);
+    console.error(
+      "Import consensus error:",
+      err
+    );
 
 
     return NextResponse.json(
@@ -231,4 +170,5 @@ export async function POST(req: NextRequest) {
     );
 
   }
+
 }

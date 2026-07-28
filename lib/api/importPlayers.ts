@@ -1,40 +1,95 @@
-import db from "../db/db";
+import { supabase } from "@/lib/supabase";
 
-const POSITIONS = ["QB", "RB", "WR", "TE", "K", "DT", "DE", "LB", "CB", "S"];
 
-export async function importPlayers() {
-  for (const position of POSITIONS) {
-    const res = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/football/nfl/athletes?limit=300&position=${position}`,
+export async function importPlayers(data: any) {
+
+  if (
+    !data ||
+    !Array.isArray(data.athletes)
+  ) {
+    throw new Error(
+      "Invalid player data."
+    );
+  }
+
+
+
+  const players =
+    data.athletes
+      .filter(
+        (player: any) =>
+          player &&
+          player.id &&
+          player.name
+      )
+      .map(
+        (player: any) => ({
+
+          playerId:
+            String(player.id)
+              .trim(),
+
+          name:
+            String(player.name)
+              .trim(),
+
+          team:
+            String(player.team ?? "")
+              .toUpperCase()
+              .trim(),
+
+          position:
+            String(player.position ?? "")
+              .toUpperCase()
+              .trim(),
+
+          headshot:
+            player.headshot ?? null,
+
+          active: 1,
+
+        })
+      );
+
+
+
+  if (players.length === 0) {
+
+    return {
+      success: false,
+      count: 0,
+    };
+
+  }
+
+
+
+  const {
+    error,
+  } = await supabase
+    .from("players")
+    .upsert(
+      players,
       {
-        cache: "no-store",
+        onConflict: "playerId",
       }
     );
 
-    const data = await res.json();
 
-    if (!data.athletes) continue;
 
-    for (const player of data.athletes) {
-      db.prepare(`
-        INSERT OR REPLACE INTO players (
-          playerId,
-          name,
-          team,
-          position,
-          headshot,
-          active
-        )
-        VALUES (
-          ?, ?, ?, ?, ?, 1
-        )
-      `).run(
-        player.id,
-        player.displayName,
-        player.team?.abbreviation ?? "",
-        player.position?.abbreviation ?? "",
-        player.headshot?.href ?? ""
-      );
-    }
+  if (error) {
+    throw error;
   }
+
+
+
+  return {
+
+    success: true,
+
+    count:
+      players.length,
+
+  };
+
 }

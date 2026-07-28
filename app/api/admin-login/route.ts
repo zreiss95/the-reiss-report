@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
 
     const locked =
-      checkLoginLock(ip);
+      await checkLoginLock(ip);
 
 
 
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
 
     if (!validCredentials) {
 
-      recordFailedLogin(ip);
+      await recordFailedLogin(ip);
 
 
       return NextResponse.json(
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 
 
 
-    clearFailedLogin(ip);
+    await clearFailedLogin(ip);
 
 
 

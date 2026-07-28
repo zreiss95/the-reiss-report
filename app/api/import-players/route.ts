@@ -1,138 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../lib/db/db";
+import { importPlayers } from "@/lib/api/importPlayers";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
+
 export async function POST(req: NextRequest) {
+
   try {
 
-    const authError = await requireAdmin(req);
+    const authError =
+      await requireAdmin(req);
+
 
     if (authError) {
       return authError;
     }
 
 
-    const { players } = await req.json();
 
-
-    if (!Array.isArray(players) || players.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "No players supplied.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
+    const data =
+      await req.json();
 
 
 
-    const insert = db.prepare(`
-      INSERT INTO players (
-        playerId,
-        name,
-        team,
-        position,
-        headshot,
-        active
-      )
-
-      VALUES (
-
-        @playerId,
-        @name,
-        @team,
-        @position,
-        @headshot,
-        1
-
-      )
-
-
-      ON CONFLICT(playerId)
-
-      DO UPDATE SET
-
-        name = excluded.name,
-        team = excluded.team,
-        position = excluded.position,
-        headshot = excluded.headshot,
-        active = 1
-
-    `);
+    const result =
+      await importPlayers(data);
 
 
 
-    const transaction = db.transaction((rows: any[]) => {
-
-      for (const row of rows) {
-
-        if (!row || typeof row !== "object") {
-          continue;
-        }
-
-
-        if (!row.playerId || !row.name) {
-          continue;
-        }
-
-
-
-        insert.run({
-
-          playerId:
-            String(row.playerId)
-              .trim(),
-
-
-          name:
-            String(row.name)
-              .trim(),
-
-
-          team:
-            String(row.team ?? "")
-              .toUpperCase()
-              .trim(),
-
-
-          position:
-            String(row.position ?? "")
-              .toUpperCase()
-              .trim(),
-
-
-          headshot:
-            row.headshot ?? null,
-
-        });
-
-      }
-
-    });
-
-
-
-    transaction(players);
-
-
-
-    return NextResponse.json({
-
-      success: true,
-
-      count: players.length,
-
-    });
+    return NextResponse.json(
+      result
+    );
 
 
 
   } catch (err: any) {
 
     console.error(
-      "Import players error:",
+      "Import players route error:",
       err
     );
 
@@ -148,4 +52,5 @@ export async function POST(req: NextRequest) {
     );
 
   }
+
 }

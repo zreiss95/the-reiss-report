@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@/lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 
@@ -14,9 +14,7 @@ export async function POST(req: NextRequest) {
     }
 
 
-
     const { position } = await req.json();
-
 
 
     if (!position) {
@@ -32,7 +30,6 @@ export async function POST(req: NextRequest) {
     }
 
 
-
     const normalizedPosition =
       String(position)
         .toUpperCase()
@@ -40,16 +37,21 @@ export async function POST(req: NextRequest) {
 
 
 
-    const result = db.prepare(`
-      DELETE FROM player_rankings
-      WHERE position = ?
-    `).run(normalizedPosition);
+    const { error } = await supabase
+      .from("player_rankings")
+      .delete()
+      .eq("position", normalizedPosition);
+
+
+
+    if (error) {
+      throw error;
+    }
 
 
 
     return NextResponse.json({
       success: true,
-      deleted: result.changes,
       position: normalizedPosition,
     });
 

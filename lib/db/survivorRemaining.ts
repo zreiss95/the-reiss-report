@@ -1,4 +1,4 @@
-import db from "./db";
+import { supabase } from "@/lib/supabase";
 
 
 function validateSurvivorRemainingData(
@@ -29,32 +29,35 @@ function validateSurvivorRemainingData(
 
     gameId:
       String(data.gameId ?? "")
-      .trim(),
+        .trim(),
 
     team:
       String(data.team ?? "")
-      .toUpperCase()
-      .trim(),
+        .toUpperCase()
+        .trim(),
 
     opponent:
       String(data.opponent ?? "")
-      .toUpperCase()
-      .trim(),
+        .toUpperCase()
+        .trim(),
 
     confidence:
       Number(data.confidence ?? 0),
 
     analysis:
       String(data.analysis ?? "")
-      .trim(),
+        .trim(),
 
     kickoff:
       String(data.kickoff ?? "")
-      .trim(),
+        .trim(),
 
     status:
       String(data.status ?? "draft")
-      .trim(),
+        .trim(),
+
+    updatedAt:
+      new Date().toISOString(),
 
   };
 
@@ -62,7 +65,7 @@ function validateSurvivorRemainingData(
 
 
 
-export function saveSurvivorRemaining(
+export async function saveSurvivorRemaining(
   data: any
 ) {
 
@@ -71,132 +74,123 @@ export function saveSurvivorRemaining(
 
 
 
-  db.prepare(`
-    INSERT INTO survivor_remaining (
-
-      week,
-      rank,
-
-      gameId,
-
-      team,
-      opponent,
-
-      confidence,
-
-      analysis,
-
-      kickoff,
-
-      status,
-
-      updatedAt
-
-    )
-
-    VALUES (
-
-      @week,
-      @rank,
-
-      @gameId,
-
-      @team,
-      @opponent,
-
-      @confidence,
-
-      @analysis,
-
-      @kickoff,
-
-      @status,
-
-      datetime('now')
-
-    )
+  const { error } =
+    await supabase
+      .from("survivor_remaining")
+      .upsert(
+        row,
+        {
+          onConflict:
+            "week,rank",
+        }
+      );
 
 
-    ON CONFLICT(week, rank)
 
-    DO UPDATE SET
+  if (error) {
+    throw error;
+  }
 
-      gameId = excluded.gameId,
 
-      team = excluded.team,
-
-      opponent = excluded.opponent,
-
-      confidence = excluded.confidence,
-
-      analysis = excluded.analysis,
-
-      kickoff = excluded.kickoff,
-
-      status = excluded.status,
-
-      updatedAt = datetime('now')
-
-  `)
-  .run(row);
+  return row;
 
 }
 
 
 
-export function getSurvivorRemaining(
+export async function getSurvivorRemaining(
   week: number
 ) {
 
-  return db.prepare(`
-    SELECT *
-
-    FROM survivor_remaining
-
-    WHERE week = ?
-
-    ORDER BY rank ASC
-
-  `)
-  .all(
-    Number(week)
-  );
-
-}
-
+  const { data, error } =
+    await supabase
+      .from("survivor_remaining")
+      .select("*")
+      .eq(
+        "week",
+        Number(week)
+      )
+      .order(
+        "rank",
+        {
+          ascending: true,
+        }
+      );
 
 
-export function getAllSurvivorRemaining() {
 
-  return db.prepare(`
-    SELECT *
+  if (error) {
+    throw error;
+  }
 
-    FROM survivor_remaining
 
-    ORDER BY week DESC, rank ASC
-
-  `)
-  .all();
+  return data ?? [];
 
 }
 
 
 
-export function getAvailableSurvivorRemainingWeeks() {
+export async function getAllSurvivorRemaining() {
 
-  return db
-    .prepare(`
-      SELECT DISTINCT week
+  const { data, error } =
+    await supabase
+      .from("survivor_remaining")
+      .select("*")
+      .order(
+        "week",
+        {
+          ascending: false,
+        }
+      )
+      .order(
+        "rank",
+        {
+          ascending: true,
+        }
+      );
 
-      FROM survivor_remaining
 
-      ORDER BY week DESC
 
-    `)
-    .all()
-    .map(
-      (row: any) =>
-        row.week
-    );
+  if (error) {
+    throw error;
+  }
+
+
+  return data ?? [];
+
+}
+
+
+
+export async function getAvailableSurvivorRemainingWeeks() {
+
+  const { data, error } =
+    await supabase
+      .from("survivor_remaining")
+      .select("week")
+      .order(
+        "week",
+        {
+          ascending: false,
+        }
+      );
+
+
+
+  if (error) {
+    throw error;
+  }
+
+
+
+  return [
+    ...new Set(
+      (data ?? [])
+        .map(
+          (row: any) =>
+            row.week
+        )
+    ),
+  ];
 
 }

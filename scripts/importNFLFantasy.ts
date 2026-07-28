@@ -1,23 +1,51 @@
-import db from "../lib/db/db";
+import { supabase } from "../lib/supabase";
 import { importNFLFantasy } from "../lib/importers/nfl/fantasy";
+
 
 async function run() {
   const rankings = await importNFLFantasy("QB");
 
-  const update = db.prepare(`
-    UPDATE player_rankings
-    SET consensusRank = ?
-    WHERE player LIKE ?
-      AND position='QB'
-      AND season=2025
-  `);
 
-  rankings.forEach((player) => {
-    update.run(
-      player.consensusRank,
-      `%${player.player}%`
-    );
-  });
+  for (const player of rankings) {
+
+    const {
+      error,
+    } = await supabase
+      .from("player_rankings")
+      .update({
+        consensusRank:
+          player.consensusRank,
+      })
+      .ilike(
+        "player",
+        `%${player.player}%`
+      )
+      .eq(
+        "position",
+        "QB"
+      )
+      .eq(
+        "season",
+        2025
+      );
+
+
+    if (error) {
+      console.error(
+        `Failed updating ${player.player}`,
+        error
+      );
+    }
+
+  }
+
+
+ 
 }
 
-run();
+
+run()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

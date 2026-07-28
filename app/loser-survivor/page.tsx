@@ -2,8 +2,10 @@ import { getWeekGames } from "../../lib/api/getWeekGames";
 import {
   getLoserSurvivor,
   getLoserSurvivorRemaining,
-  getAvailableLoserSurvivorWeeks,
 } from "../../lib/db/loserSurvivor";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function SurvivorPage({
   searchParams,
@@ -12,97 +14,102 @@ export default async function SurvivorPage({
     week?: string;
   };
 }) {
- // Current week (temporary default)
   const currentWeek = 1;
 
-  // Load current week games
   const currentGames = await getWeekGames(currentWeek);
 
-  // Selected week defaults to Week 1
   const week =
     Number(searchParams.week) || currentWeek;
 
-  // Load selected week games
   const games =
     week === currentWeek
       ? currentGames
       : await getWeekGames(week);
 
-function getTeamLogo(teamName: string) {
-  if (!teamName) return "";
 
-  const normalized =
-    teamName
-      .toLowerCase()
-      .trim();
+  function getTeamLogo(teamName: string) {
+    if (!teamName) return "";
 
-  for (const game of games) {
-
-    const competition =
-      game.competitions?.[0];
-
-    if (!competition) continue;
+    const normalized =
+      teamName
+        .toLowerCase()
+        .trim();
 
 
-    const teams =
-      competition.competitors ?? [];
+    for (const game of games) {
+
+      const competition =
+        game.competitions?.[0];
+
+      if (!competition) continue;
 
 
-    for (const team of teams) {
-
-      const display =
-        team.team.displayName
-          ?.toLowerCase()
-          .trim();
+      const teams =
+        competition.competitors ?? [];
 
 
-      const short =
-        team.team.shortDisplayName
-          ?.toLowerCase()
-          .trim();
+      for (const team of teams) {
+
+        const display =
+          team.team.displayName
+            ?.toLowerCase()
+            .trim();
 
 
-      const abbreviation =
-        team.team.abbreviation
-          ?.toLowerCase()
-          .trim();
+        const short =
+          team.team.shortDisplayName
+            ?.toLowerCase()
+            .trim();
 
 
-
-      if (
-        normalized === display ||
-        normalized === short ||
-        normalized === abbreviation
-      ) {
-        return team.team.logo ?? "";
-      }
+        const abbreviation =
+          team.team.abbreviation
+            ?.toLowerCase()
+            .trim();
 
 
-      // extra protection for uppercase saved values
-      if (
-        display &&
-        (
-          display.includes(normalized) ||
-          normalized.includes(display)
-        )
-      ) {
-        return team.team.logo ?? "";
+        if (
+          normalized === display ||
+          normalized === short ||
+          normalized === abbreviation
+        ) {
+          return team.team.logo ?? "";
+        }
+
+
+        if (
+          display &&
+          (
+            display.includes(normalized) ||
+            normalized.includes(display)
+          )
+        ) {
+          return team.team.logo ?? "";
+        }
+
       }
 
     }
 
+    return "";
   }
 
-  return "";
-}
 
-  const overallPicks = getLoserSurvivor(week);
-  const remainingPicks = getLoserSurvivorRemaining(week);
+  const overallPicks =
+    await getLoserSurvivor(week);
+console.log("LOSER SURVIVOR PAGE WEEK:", week);
+console.log("LOSER SURVIVOR RESULTS:", overallPicks);
 
-  const availableWeeks = Array.from(
-  { length: 18 },
-  (_, i) => i + 1
-);
+  const remainingPicks =
+    await getLoserSurvivorRemaining(week);
+
+
+  const availableWeeks =
+    Array.from(
+      { length: 18 },
+      (_, i) => i + 1
+    );
+
 
   function renderSection(
     title: string,
@@ -120,6 +127,7 @@ function getTeamLogo(teamName: string) {
         >
           {title}
         </h2>
+
 
         {picks.length === 0 ? (
           <div
@@ -142,14 +150,15 @@ function getTeamLogo(teamName: string) {
             }}
           >
 
-        
-                      {picks.map((pick: any) => {
+            {picks.map((pick: any) => {
+
               const heading =
                 pick.rank === 1
                   ? "💀 Best Fade"
                   : pick.rank === 2
                   ? "☠️ 2nd Best Fade"
                   : "⚠️ Backup Fade";
+
 
               const headingColor =
                 pick.rank === 1
@@ -158,6 +167,7 @@ function getTeamLogo(teamName: string) {
                   ? "#f97316"
                   : "#eab308";
 
+
               const confidenceColor =
                 pick.confidence >= 90
                   ? "#22c55e"
@@ -165,18 +175,22 @@ function getTeamLogo(teamName: string) {
                   ? "#eab308"
                   : "#ef4444";
 
+
               return (
                 <div
                   key={pick.rank}
                   style={{
                     background:
                       "linear-gradient(145deg,#172036,#111827)",
-                    border: "1px solid #2b3b60",
+                    border:
+                      "1px solid #2b3b60",
                     borderRadius: 22,
                     padding: 30,
-                    boxShadow: "0 18px 40px rgba(0,0,0,.35)",
+                    boxShadow:
+                      "0 18px 40px rgba(0,0,0,.35)",
                   }}
                 >
+
                   <div
                     style={{
                       color: headingColor,
@@ -188,6 +202,7 @@ function getTeamLogo(teamName: string) {
                     {heading}
                   </div>
 
+
                   <div
                     style={{
                       display: "flex",
@@ -196,19 +211,22 @@ function getTeamLogo(teamName: string) {
                       marginBottom: 14,
                     }}
                   >
+
                     {getTeamLogo(pick.team) && (
-  <img
-    src={getTeamLogo(pick.team)}
-    alt={pick.team}
-    style={{
-      width:64,
-      height:64,
-      objectFit:"contain",
-    }}
-  />
-)}
+                      <img
+                        src={getTeamLogo(pick.team)}
+                        alt={pick.team}
+                        style={{
+                          width: 64,
+                          height: 64,
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
+
 
                     <div>
+
                       <div
                         style={{
                           fontSize: 32,
@@ -219,6 +237,7 @@ function getTeamLogo(teamName: string) {
                         {pick.team}
                       </div>
 
+
                       <div
                         style={{
                           color: "#94a3b8",
@@ -228,8 +247,11 @@ function getTeamLogo(teamName: string) {
                       >
                         vs {pick.opponent}
                       </div>
+
                     </div>
+
                   </div>
+
 
                   <div
                     style={{
@@ -245,12 +267,14 @@ function getTeamLogo(teamName: string) {
                     {pick.confidence}% Confidence
                   </div>
 
+
                   <div
                     style={{
                       marginTop: 22,
                       padding: 20,
                       background: "#111827",
-                      border: "1px solid #24314f",
+                      border:
+                        "1px solid #24314f",
                       borderRadius: 14,
                       color: "#d1d5db",
                       lineHeight: 1.7,
@@ -258,6 +282,7 @@ function getTeamLogo(teamName: string) {
                   >
                     {pick.analysis}
                   </div>
+
 
                   <div
                     style={{
@@ -272,23 +297,31 @@ function getTeamLogo(teamName: string) {
                     {pick.kickoff
                       ? new Date(
                           pick.kickoff
-                        ).toLocaleString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })
+                        ).toLocaleString(
+                          "en-US",
+                          {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          }
+                        )
                       : ""}
                   </div>
+
+
                 </div>
               );
             })}
+
           </div>
         )}
+
       </>
     );
   }
+
 
   return (
     <main
@@ -299,6 +332,7 @@ function getTeamLogo(teamName: string) {
         color: "white",
       }}
     >
+
       <h1
         style={{
           fontSize: 48,
@@ -309,6 +343,7 @@ function getTeamLogo(teamName: string) {
         💀 Loser Survivor Picks
       </h1>
 
+
       <div
         style={{
           display: "flex",
@@ -317,6 +352,7 @@ function getTeamLogo(teamName: string) {
           marginBottom: 25,
         }}
       >
+
         {availableWeeks.map((w: number) => (
           <a
             key={w}
@@ -336,7 +372,9 @@ function getTeamLogo(teamName: string) {
             Week {w}
           </a>
         ))}
+
       </div>
+
 
       <p
         style={{
@@ -348,15 +386,18 @@ function getTeamLogo(teamName: string) {
         NFL Week {week}
       </p>
 
+
       {renderSection(
         "💀 Best Picks (Regardless of Week)",
         overallPicks
       )}
 
+
       {renderSection(
         "♻ Remaining Teams Only",
         remainingPicks
       )}
+
     </main>
   );
 }

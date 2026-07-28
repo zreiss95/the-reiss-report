@@ -26,10 +26,16 @@ export default function RankingBoard({
 
 // Independent editable copy (single source of truth)
 const [myRankings, setMyRankings] = useState(
-  rankings.map((p, index) => ({
-    ...p,
-    id: p.id ?? `${p.player}-${index}`,
-  }))
+  [...rankings]
+    .sort(
+      (a, b) =>
+        Number(a.myRank ?? 0) -
+        Number(b.myRank ?? 0)
+    )
+    .map((p, index) => ({
+      ...p,
+      id: p.id ?? `${p.player}-${index}`,
+    }))
 );
 
 
@@ -41,7 +47,35 @@ const consensusRankings = [...myRankings].sort(
 
 const [search, setSearch] = useState("");
 
+function getCsrfToken() {
+  return document.cookie
+    .split("; ")
+    .find((row) =>
+      row.startsWith("admin-csrf-token=")
+    )
+    ?.split("=")[1];
+}
 
+async function saveToDatabase(rankingsToSave: any[], lock = false) {
+  const csrf = getCsrfToken();
+
+  await fetch("/api/save-fantasy", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+
+      ...(csrf
+        ? {
+            "x-csrf-token": csrf,
+          }
+        : {}),
+    },
+    body: JSON.stringify({
+      rankings: rankingsToSave,
+      lock,
+    }),
+  });
+}
 
 const filteredConsensus = consensusRankings.filter((player) => {
   const q = search.toLowerCase();
@@ -72,7 +106,11 @@ useEffect(() => {
 
   setMyRankings(
     [...rankings]
-      .sort((a, b) => a.myRank - b.myRank)
+      .sort(
+  (a, b) =>
+    Number(a.myRank ?? 0) -
+    Number(b.myRank ?? 0)
+)
       .map((p, index) => ({
         ...p,
         id: p.id ?? `${p.player}-${index}`,
@@ -101,16 +139,9 @@ function updatePlayer(updated: any) {
     );
 
 
-    fetch("/api/save-fantasy", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        rankings: updatedRankings,
-        lock: false,
-      }),
-    });
+    const csrf = getCsrfToken();
+
+saveToDatabase(updatedRankings);
 
 
     return updatedRankings;
@@ -152,27 +183,29 @@ function updatePlayer(updated: any) {
     setMyRankings(reordered);
 
 
-    fetch("/api/save-fantasy", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        rankings: reordered,
-        lock: false,
-      }),
-    });
+    const csrf = getCsrfToken();
+
+saveToDatabase(reordered);
   }
 
 
 
 
   async function saveRankings() {
-    const res = await fetch("/api/save-fantasy", {
+
+  const csrf = getCsrfToken();
+
+  const res = await fetch("/api/save-fantasy", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-      },
+  "Content-Type": "application/json",
+
+  ...(csrf
+    ? {
+        "x-csrf-token": csrf,
+      }
+    : {}),
+},
       body: JSON.stringify({
         rankings: myRankings,
         lock: false,
@@ -206,11 +239,19 @@ function updatePlayer(updated: any) {
     }
 
 
-    const res = await fetch("/api/save-fantasy", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const csrf = getCsrfToken();
+
+const res = await fetch("/api/save-fantasy", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+
+    ...(csrf
+      ? {
+          "x-csrf-token": csrf,
+        }
+      : {}),
+  },
       body: JSON.stringify({
         rankings: myRankings,
         lock: true,

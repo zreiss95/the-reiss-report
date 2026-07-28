@@ -1,4 +1,4 @@
-import db from "./db";
+import { supabase } from "@/lib/supabase";
 
 
 function validateRankingData(
@@ -31,20 +31,20 @@ function validateRankingData(
 
     position:
       String(data.position)
-      .toUpperCase()
-      .trim(),
+        .toUpperCase()
+        .trim(),
 
     rank:
       Number(data.rank),
 
     playerName:
       String(data.playerName)
-      .trim(),
+        .trim(),
 
     team:
       String(data.team ?? "")
-      .toUpperCase()
-      .trim(),
+        .toUpperCase()
+        .trim(),
 
     consensusRank:
       Number(data.consensusRank ?? 0),
@@ -54,7 +54,10 @@ function validateRankingData(
 
     notes:
       String(data.notes ?? "")
-      .trim(),
+        .trim(),
+
+    updatedAt:
+      new Date().toISOString(),
 
   };
 
@@ -62,7 +65,7 @@ function validateRankingData(
 
 
 
-export function saveRanking(
+export async function saveRanking(
   data: any
 ) {
 
@@ -71,155 +74,176 @@ export function saveRanking(
 
 
 
-  db.prepare(`
-    INSERT INTO rankings (
-
-      week,
-      position,
-      rank,
-
-      playerName,
-      team,
-
-      consensusRank,
-      myRank,
-
-      notes,
-
-      updatedAt
-
-    )
-
-    VALUES (
-
-      @week,
-      @position,
-      @rank,
-
-      @playerName,
-      @team,
-
-      @consensusRank,
-      @myRank,
-
-      @notes,
-
-      datetime('now')
-
-    )
+  const { error } =
+    await supabase
+      .from("rankings")
+      .upsert(
+        row,
+        {
+          onConflict:
+            "week,position,rank",
+        }
+      );
 
 
-    ON CONFLICT(week, position, rank)
 
-    DO UPDATE SET
+  if (error) {
+    throw error;
+  }
 
-      playerName = excluded.playerName,
 
-      team = excluded.team,
-
-      consensusRank = excluded.consensusRank,
-
-      myRank = excluded.myRank,
-
-      notes = excluded.notes,
-
-      updatedAt = datetime('now')
-
-  `)
-  .run(row);
+  return row;
 
 }
 
 
 
-export function getRankings(
+export async function getRankings(
   week: number,
   position: string
 ) {
 
-  return db
-    .prepare(`
-      SELECT *
+  const { data, error } =
+    await supabase
+      .from("rankings")
+      .select("*")
+      .eq(
+        "week",
+        Number(week)
+      )
+      .eq(
+        "position",
+        String(position)
+          .toUpperCase()
+          .trim()
+      )
+      .order(
+        "rank",
+        {
+          ascending: true,
+        }
+      );
 
-      FROM rankings
 
-      WHERE week = ?
 
-      AND position = ?
+  if (error) {
+    throw error;
+  }
 
-      ORDER BY rank ASC
-    `)
-    .all(
-      Number(week),
-      String(position)
-      .toUpperCase()
-      .trim()
-    );
+
+  return data ?? [];
 
 }
 
 
 
-export function getRankingPositions(
+export async function getRankingPositions(
   week: number
 ) {
 
-  return db
-    .prepare(`
-      SELECT DISTINCT position
+  const { data, error } =
+    await supabase
+      .from("rankings")
+      .select("position")
+      .eq(
+        "week",
+        Number(week)
+      )
+      .order(
+        "position",
+        {
+          ascending: true,
+        }
+      );
 
-      FROM rankings
 
-      WHERE week = ?
 
-      ORDER BY position ASC
-    `)
-    .all(
-      Number(week)
-    );
+  if (error) {
+    throw error;
+  }
+
+
+
+  return [
+    ...new Set(
+      (data ?? [])
+        .map(
+          (row: any) =>
+            row.position
+        )
+    ),
+  ].map(
+    (position) => ({
+      position,
+    })
+  );
 
 }
 
 
 
-export function getAvailableRankingWeeks() {
+export async function getAvailableRankingWeeks() {
 
-  return db
-    .prepare(`
-      SELECT DISTINCT week
+  const { data, error } =
+    await supabase
+      .from("rankings")
+      .select("week")
+      .order(
+        "week",
+        {
+          ascending: false,
+        }
+      );
 
-      FROM rankings
 
-      ORDER BY week DESC
-    `)
-    .all()
-    .map(
-      (row: any) =>
-        row.week
-    );
+
+  if (error) {
+    throw error;
+  }
+
+
+
+  return [
+    ...new Set(
+      (data ?? [])
+        .map(
+          (row: any) =>
+            row.week
+        )
+    ),
+  ];
 
 }
 
 
 
-export function deleteRankings(
+export async function deleteRankings(
   week: number,
   position: string
 ) {
 
-  db.prepare(`
-    DELETE FROM rankings
+  const { error } =
+    await supabase
+      .from("rankings")
+      .delete()
+      .eq(
+        "week",
+        Number(week)
+      )
+      .eq(
+        "position",
+        String(position)
+          .toUpperCase()
+          .trim()
+      );
 
-    WHERE week = ?
 
-    AND position = ?
 
-  `)
-  .run(
-    Number(week),
-    String(position)
-    .toUpperCase()
-    .trim()
-  );
+  if (error) {
+    throw error;
+  }
+
+
+  return true;
 
 }

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "../../../lib/db/db";
+import { supabase } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 const CURRENT_SEASON = 2026;
 
+
 export async function POST(req: NextRequest) {
+
   try {
 
     const authError = await requireAdmin(req);
@@ -31,103 +33,84 @@ export async function POST(req: NextRequest) {
 
 
 
-    const insert = db.prepare(`
-      INSERT INTO team_rankings (
-        team,
-        consensusRank,
-        myRank,
-        analysis,
-        favorite,
-        locked,
-        season,
-        updatedAt
-      )
+    const rows = teams
+      .filter((row: any) => {
 
-      VALUES (
+        return (
+          row &&
+          typeof row === "object" &&
+          row.team
+        );
 
-        @team,
-        @consensusRank,
-        @myRank,
-        @analysis,
-        @favorite,
-        @locked,
-        @season,
-        datetime('now')
+      })
+      .map((row: any) => ({
 
-      )
+        team:
+          String(row.team)
+            .toUpperCase()
+            .trim(),
 
 
-      ON CONFLICT(team, season)
-
-      DO UPDATE SET
-
-        consensusRank = excluded.consensusRank,
-        myRank = excluded.myRank,
-        analysis = excluded.analysis,
-        favorite = excluded.favorite,
-        locked = excluded.locked,
-        updatedAt = datetime('now')
-
-    `);
+        consensusRank:
+          Number(row.consensusRank ?? 0),
 
 
+        myRank:
+          Number(row.myRank ?? 0),
 
-    const transaction = db.transaction((rows: any[]) => {
 
-      for (const row of rows) {
+        analysis:
+          String(row.analysis ?? "")
+            .trim(),
 
-        if (!row || typeof row !== "object") {
-          continue;
+
+        favorite:
+          Number(row.favorite ?? 0),
+
+
+        locked:
+          Number(row.locked ?? 0),
+
+
+        season:
+          CURRENT_SEASON,
+
+
+        updatedAt:
+          new Date().toISOString(),
+
+      }));
+
+
+
+    if (rows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "No valid teams found.",
+        },
+        {
+          status: 400,
         }
+      );
+    }
 
 
-        if (!row.team) {
-          continue;
+
+    const { error } = await supabase
+      .from("team_rankings")
+      .upsert(
+        rows,
+        {
+          onConflict: "team,season",
         }
+      );
 
 
 
-        insert.run({
-
-          team:
-            String(row.team)
-              .toUpperCase()
-              .trim(),
-
-
-          consensusRank:
-            Number(row.consensusRank ?? 0),
-
-
-          myRank:
-            Number(row.myRank ?? 0),
-
-
-          analysis:
-            String(row.analysis ?? "")
-              .trim(),
-
-
-          favorite:
-            Number(row.favorite ?? 0),
-
-
-          locked:
-            Number(row.locked ?? 0),
-
-
-          season:
-            CURRENT_SEASON,
-
-        });
-
-      }
-
-    });
-
-
-
-    transaction(teams);
+    if (error) {
+      throw error;
+    }
 
 
 
@@ -135,7 +118,7 @@ export async function POST(req: NextRequest) {
 
       success: true,
 
-      count: teams.length,
+      count: rows.length,
 
       season: CURRENT_SEASON,
 
@@ -162,4 +145,5 @@ export async function POST(req: NextRequest) {
     );
 
   }
+
 }

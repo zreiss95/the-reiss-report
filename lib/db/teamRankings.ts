@@ -1,4 +1,4 @@
-import db from "./db";
+import { supabase } from "@/lib/supabase";
 
 
 const CURRENT_SEASON = 2026;
@@ -27,8 +27,8 @@ function validateTeamRankingData(
 
     team:
       String(data.team)
-      .toUpperCase()
-      .trim(),
+        .toUpperCase()
+        .trim(),
 
     consensusRank:
       Number(data.consensusRank ?? 0),
@@ -38,7 +38,7 @@ function validateTeamRankingData(
 
     analysis:
       String(data.analysis ?? "")
-      .trim(),
+        .trim(),
 
     favorite:
       data.favorite ? 1 : 0,
@@ -52,36 +52,48 @@ function validateTeamRankingData(
     season:
       Number(data.season ?? CURRENT_SEASON),
 
+    updatedAt:
+      new Date().toISOString(),
+
   };
 
 }
 
 
 
-export function getTeamRankings(
+export async function getTeamRankings(
   season = CURRENT_SEASON
 ) {
 
-  return db
-    .prepare(`
-      SELECT *
+  const { data, error } =
+    await supabase
+      .from("team_rankings")
+      .select("*")
+      .eq(
+        "season",
+        Number(season)
+      )
+      .order(
+        "myRank",
+        {
+          ascending: true,
+        }
+      );
 
-      FROM team_rankings
 
-      WHERE season = ?
 
-      ORDER BY myRank ASC
+  if (error) {
+    throw error;
+  }
 
-    `)
-    .all(
-      Number(season)
-    );
+
+  return data ?? [];
 
 }
 
 
 
-export function saveTeamRanking(
+export async function saveTeamRanking(
   data: any
 ) {
 
@@ -90,78 +102,31 @@ export function saveTeamRanking(
 
 
 
-  db.prepare(`
-    INSERT INTO team_rankings (
-
-      team,
-
-      consensusRank,
-
-      myRank,
-
-      analysis,
-
-      favorite,
-
-      locked,
-
-      lockedAt,
-
-      season,
-
-      updatedAt
-
-    )
-
-    VALUES (
-
-      @team,
-
-      @consensusRank,
-
-      @myRank,
-
-      @analysis,
-
-      @favorite,
-
-      @locked,
-
-      @lockedAt,
-
-      @season,
-
-      datetime('now')
-
-    )
+  const { error } =
+    await supabase
+      .from("team_rankings")
+      .upsert(
+        row,
+        {
+          onConflict:
+            "team,season",
+        }
+      );
 
 
-    ON CONFLICT(team, season)
 
-    DO UPDATE SET
+  if (error) {
+    throw error;
+  }
 
-      consensusRank = excluded.consensusRank,
 
-      myRank = excluded.myRank,
-
-      analysis = excluded.analysis,
-
-      favorite = excluded.favorite,
-
-      locked = excluded.locked,
-
-      lockedAt = excluded.lockedAt,
-
-      updatedAt = datetime('now')
-
-  `)
-  .run(row);
+  return row;
 
 }
 
 
 
-export function deleteTeamRanking(
+export async function deleteTeamRanking(
   team: string,
   season = CURRENT_SEASON
 ) {
@@ -173,22 +138,29 @@ export function deleteTeamRanking(
   }
 
 
-  db.prepare(`
-    DELETE
 
-    FROM team_rankings
+  const { error } =
+    await supabase
+      .from("team_rankings")
+      .delete()
+      .eq(
+        "team",
+        String(team)
+          .toUpperCase()
+          .trim()
+      )
+      .eq(
+        "season",
+        Number(season)
+      );
 
-    WHERE team = ?
 
-    AND season = ?
 
-  `)
-  .run(
-    String(team)
-      .toUpperCase()
-      .trim(),
+  if (error) {
+    throw error;
+  }
 
-    Number(season)
-  );
+
+  return true;
 
 }
