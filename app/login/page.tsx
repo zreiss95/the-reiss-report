@@ -42,14 +42,17 @@ export default function LoginPage() {
     }
 
 
-    const { error } =
+    const {
+      data,
+      error,
+    } =
       await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
 
-    if (error) {
+    if (error || !data.user) {
       setError(
         "Invalid email or password."
       );
@@ -60,25 +63,45 @@ export default function LoginPage() {
 
 
     if (rememberEmail) {
-  localStorage.setItem(
-    "login_email",
-    email
-  );
-} else {
-  localStorage.removeItem(
-    "login_email"
-  );
-}
+      localStorage.setItem(
+        "login_email",
+        email
+      );
+    } else {
+      localStorage.removeItem(
+        "login_email"
+      );
+    }
 
 
-// Create CSRF token after successful login
-await fetch("/api/auth/csrf", {
-  method: "GET",
-});
+    // Create CSRF token after successful login
+    await fetch("/api/auth/csrf", {
+      method: "GET",
+    });
 
 
-router.push("/admin");
-router.refresh();
+    // Check account role
+    const {
+      data: profile,
+    } =
+      await supabase
+        .from("profiles")
+        .select("role")
+        .eq(
+          "id",
+          data.user.id
+        )
+        .single();
+
+
+    if (profile?.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/account");
+    }
+
+
+    router.refresh();
   }
 
 
@@ -200,37 +223,40 @@ router.refresh();
 
 
       <div
-  style={{
-    marginTop:25,
-    textAlign:"center",
-    color:"#94a3b8",
-  }}
->
-  <div style={{ marginBottom:10 }}>
-    <Link
-      href="/forgot-password"
-      style={{
-        color:"#60a5fa",
-        fontWeight:700,
-        textDecoration:"none",
-      }}
-    >
-      Forgot password?
-    </Link>
-  </div>
+        style={{
+          marginTop:25,
+          textAlign:"center",
+          color:"#94a3b8",
+        }}
+      >
 
-  Don't have an account?{" "}
-  <Link
-    href="/signup"
-    style={{
-      color:"#60a5fa",
-      fontWeight:700,
-      textDecoration:"none",
-    }}
-  >
-    Create one
-  </Link>
-</div>
+        <div style={{ marginBottom:10 }}>
+          <Link
+            href="/forgot-password"
+            style={{
+              color:"#60a5fa",
+              fontWeight:700,
+              textDecoration:"none",
+            }}
+          >
+            Forgot password?
+          </Link>
+        </div>
+
+        Don't have an account?{" "}
+
+        <Link
+          href="/signup"
+          style={{
+            color:"#60a5fa",
+            fontWeight:700,
+            textDecoration:"none",
+          }}
+        >
+          Create one
+        </Link>
+
+      </div>
 
     </main>
   );
