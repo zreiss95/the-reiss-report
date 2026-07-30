@@ -2,23 +2,38 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
+export default function ResetPasswordPage() {
+
+  const router = useRouter();
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
   const [loading, setLoading] = useState(false);
 
 
-  async function resetPassword(e: React.FormEvent) {
+  async function updatePassword(e: React.FormEvent) {
+
     e.preventDefault();
 
-    setMessage("");
     setError("");
+    setMessage("");
 
-    if (!email) {
-      setError("Please enter your email.");
+
+    if (!password || !confirmPassword) {
+      setError("Please complete both fields.");
+      return;
+    }
+
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -28,13 +43,9 @@ export default function ForgotPasswordPage() {
 
     const {
       error,
-    } = await supabase.auth.resetPasswordForEmail(
-      email,
-      {
-        redirectTo:
-          `${window.location.origin}/reset-password`,
-      }
-    );
+    } = await supabase.auth.updateUser({
+      password,
+    });
 
 
     if (error) {
@@ -45,11 +56,17 @@ export default function ForgotPasswordPage() {
 
 
     setMessage(
-      "Password reset email sent. Please check your inbox."
+      "Password updated successfully."
     );
 
 
     setLoading(false);
+
+
+    setTimeout(() => {
+      router.push("/login");
+    }, 2000);
+
   }
 
 
@@ -83,17 +100,31 @@ export default function ForgotPasswordPage() {
           marginBottom:20,
         }}
       >
-        Forgot Password
+        Reset Password
       </h1>
 
 
-      <form onSubmit={resetPassword}>
+      <form onSubmit={updatePassword}>
 
         <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e)=>setEmail(e.target.value)}
+          type="password"
+          placeholder="New password"
+          value={password}
+          onChange={(e)=>setPassword(e.target.value)}
+          style={{
+            width:"100%",
+            padding:12,
+            marginBottom:15,
+            borderRadius:8,
+          }}
+        />
+
+
+        <input
+          type="password"
+          placeholder="Confirm password"
+          value={confirmPassword}
+          onChange={(e)=>setConfirmPassword(e.target.value)}
           style={{
             width:"100%",
             padding:12,
@@ -117,30 +148,20 @@ export default function ForgotPasswordPage() {
           }}
         >
           {loading
-            ? "Sending..."
-            : "Send Reset Email"}
+            ? "Updating..."
+            : "Update Password"}
         </button>
 
 
         {error && (
-          <p
-            style={{
-              color:"#ef4444",
-              marginTop:15,
-            }}
-          >
+          <p style={{color:"#ef4444",marginTop:15}}>
             {error}
           </p>
         )}
 
 
         {message && (
-          <p
-            style={{
-              color:"#4ade80",
-              marginTop:15,
-            }}
-          >
+          <p style={{color:"#4ade80",marginTop:15}}>
             {message}
           </p>
         )}

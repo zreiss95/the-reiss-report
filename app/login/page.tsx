@@ -200,24 +200,37 @@ router.refresh();
 
 
       <div
-        style={{
-          marginTop:25,
-          textAlign:"center",
-          color:"#94a3b8",
-        }}
-      >
-        Don't have an account?{" "}
-        <Link
-          href="/signup"
-          style={{
-            color:"#60a5fa",
-            fontWeight:700,
-            textDecoration:"none",
-          }}
-        >
-          Create one
-        </Link>
-      </div>
+  style={{
+    marginTop:25,
+    textAlign:"center",
+    color:"#94a3b8",
+  }}
+>
+  <div style={{ marginBottom:10 }}>
+    <Link
+      href="/forgot-password"
+      style={{
+        color:"#60a5fa",
+        fontWeight:700,
+        textDecoration:"none",
+      }}
+    >
+      Forgot password?
+    </Link>
+  </div>
+
+  Don't have an account?{" "}
+  <Link
+    href="/signup"
+    style={{
+      color:"#60a5fa",
+      fontWeight:700,
+      textDecoration:"none",
+    }}
+  >
+    Create one
+  </Link>
+</div>
 
     </main>
   );
