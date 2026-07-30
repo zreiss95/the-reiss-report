@@ -3,7 +3,7 @@ import {
   getLoserSurvivor,
   getLoserSurvivorRemaining,
 } from "../../lib/db/loserSurvivor";
-
+import BackButton from "@/components/BackButton";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -322,7 +322,7 @@ export default async function SurvivorPage({
   }
 
 
-  return (
+    return (
     <main
       style={{
         maxWidth: 1000,
@@ -331,6 +331,10 @@ export default async function SurvivorPage({
         color: "white",
       }}
     >
+
+      <div style={{ marginBottom: 20 }}>
+        <BackButton />
+      </div>
 
       <h1
         style={{

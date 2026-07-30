@@ -15,28 +15,28 @@ export default function FeatureCard({
 }: Props) {
   const card = (
     <div
-      style={{
-        background: "#172036",
-        border: "1px solid #24314f",
-        borderRadius: 16,
-        padding: 24,
-        height: 180,
-        display: "flex",
-        flexDirection: "column",
-        transition: "all .2s",
-        cursor: disabled ? "default" : "pointer",
-      }}
-    >
-      <h3
   style={{
-    fontSize: 28,
-    fontWeight: 800,
-    marginBottom: 16,
-    color: "white",
+    background: "#172036",
+    border: "1px solid #24314f",
+    borderRadius: 16,
+    padding: "5px 24px 24px",
+    height: 150,
+    display: "flex",
+    flexDirection: "column",
+    transition: "all .2s",
+    cursor: disabled ? "default" : "pointer",
   }}
 >
-  {title}
-</h3>
+  <h3
+    style={{
+      fontSize: 28,
+      fontWeight: 800,
+      margin: "5px 0 12px 0",
+      color: "white",
+    }}
+  >
+    {title}
+  </h3>
 
 <p
   style={{

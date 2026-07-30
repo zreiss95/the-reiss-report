@@ -1,8 +1,9 @@
 import { getWeekGames } from "../../../lib/api/getWeekGames";
 import { getPicks } from "../../../lib/db/picks";
 import AdminEditor from "../../../lib/components/AdminEditor";
-import { cookies } from "next/headers";
+import { isAdminAuthenticated } from "../../../lib/auth/admin";
 import { redirect } from "next/navigation";
+
 
 export default async function WeeklyPicksAdmin({
   searchParams,
@@ -11,6 +12,16 @@ export default async function WeeklyPicksAdmin({
     week?: string;
   };
 }) {
+
+  const authenticated =
+    await isAdminAuthenticated();
+
+
+  if (!authenticated) {
+    redirect("/login");
+  }
+
+
   const selectedWeek =
     Number(searchParams.week) || 1;
 
@@ -23,18 +34,6 @@ export default async function WeeklyPicksAdmin({
     await getPicks(selectedWeek);
 
 
-  const cookieStore =
-    cookies();
-
-
-  const authenticated =
-    cookieStore.get("admin-auth");
-
-
-  if (!authenticated) {
-    redirect("/admin/login");
-  }
-
 
   return (
     <main
@@ -45,6 +44,7 @@ export default async function WeeklyPicksAdmin({
         color: "white",
       }}
     >
+
       <h1
         style={{
           fontSize: 48,
@@ -73,7 +73,9 @@ export default async function WeeklyPicksAdmin({
           marginBottom: 30,
         }}
       >
+
         {Array.from({ length: 18 }, (_, i) => i + 1).map((week) => (
+
           <a
             key={week}
             href={`/admin/weekly-picks?week=${week}`}
@@ -92,7 +94,9 @@ export default async function WeeklyPicksAdmin({
           >
             Week {week}
           </a>
+
         ))}
+
       </div>
 
 
@@ -104,10 +108,12 @@ export default async function WeeklyPicksAdmin({
           padding: 30,
         }}
       >
+
         <AdminEditor
           games={games}
           existingPicks={existingPicks}
         />
+
       </div>
 
     </main>

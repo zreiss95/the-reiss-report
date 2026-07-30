@@ -1,5 +1,5 @@
 import Link from "next/link";
-
+import BackButton from "@/components/BackButton";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -29,7 +29,11 @@ export default function RankingsHome() {
         padding: "60px 24px",
         color: "white",
       }}
-    >
+        >
+      <div style={{ marginBottom: 20 }}>
+        <BackButton />
+      </div>
+
       <h1
         style={{
           fontSize: 42,

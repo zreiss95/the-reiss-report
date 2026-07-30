@@ -1,23 +1,44 @@
-import { cookies } from "next/headers";
-import { verifyAdminSession } from "./session";
+import { createClient } from "@/lib/supabase/server";
 
 
 export async function isAdminAuthenticated() {
 
-  const cookieStore = await cookies();
+  const supabase =
+    await createClient();
 
 
-  const authCookie =
-    cookieStore.get("admin-auth");
+  const {
+    data: {
+      user,
+    },
+  } =
+    await supabase.auth.getUser();
 
 
-  if (!authCookie?.value) {
+  if (!user) {
     return false;
   }
 
 
-  return verifyAdminSession(
-    authCookie.value
-  );
+  const {
+    data: profile,
+    error,
+  } =
+    await supabase
+      .from("profiles")
+      .select("role")
+      .eq(
+        "id",
+        user.id
+      )
+      .single();
+
+
+  if (error || !profile) {
+    return false;
+  }
+
+
+  return profile.role === "admin";
 
 }

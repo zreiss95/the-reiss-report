@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import RankingBoard from "@/lib/components/RankingBoard";
 import { getRankings } from "@/lib/db/playerRankings";
-
+import BackButton from "@/components/BackButton";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -45,7 +45,11 @@ export default async function PlayerPositionPage({
         padding: "40px 24px",
         color: "white",
       }}
-    >
+        >
+      <div style={{ marginBottom: 20 }}>
+        <BackButton />
+      </div>
+
       <h1
         style={{
           fontSize: 42,
@@ -64,7 +68,7 @@ export default async function PlayerPositionPage({
           fontSize: 18,
         }}
       >
-        NFL.com vs Your Rankings
+        NFL.com vs My Rankings
       </p>
 
 

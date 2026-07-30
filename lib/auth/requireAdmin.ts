@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 import { verifyCsrfToken } from "@/lib/auth/csrf";
-import { verifyAdminSession } from "@/lib/auth/session";
 
 
 export async function requireAdmin(
@@ -10,17 +9,20 @@ export async function requireAdmin(
 
   try {
 
-    const cookieStore =
-      await cookies();
+    const supabase =
+      await createClient();
 
 
+    const {
+      data: {
+        user,
+      },
+    } =
+      await supabase.auth.getUser();
 
-    const session =
-      cookieStore.get("admin-auth")?.value;
 
+    if (!user) {
 
-
-    if (!session) {
       return NextResponse.json(
         {
           success:false,
@@ -30,16 +32,31 @@ export async function requireAdmin(
           status:401,
         }
       );
+
     }
 
 
+    const {
+      data: profile,
+      error,
+    } =
+      await supabase
+        .from("profiles")
+        .select("role")
+        .eq(
+          "id",
+          user.id
+        )
+        .single();
 
-    const validSession =
-      verifyAdminSession(session);
 
 
+    if (
+      error ||
+      !profile ||
+      profile.role !== "admin"
+    ) {
 
-    if (!validSession) {
       return NextResponse.json(
         {
           success:false,
@@ -49,6 +66,7 @@ export async function requireAdmin(
           status:401,
         }
       );
+
     }
 
 
@@ -59,13 +77,14 @@ export async function requireAdmin(
       );
 
 
-
     const validCsrf =
-      await verifyCsrfToken(csrfToken);
-
+      await verifyCsrfToken(
+        csrfToken
+      );
 
 
     if (!validCsrf) {
+
       return NextResponse.json(
         {
           success:false,
@@ -75,12 +94,12 @@ export async function requireAdmin(
           status:403,
         }
       );
+
     }
 
 
 
     return null;
-
 
 
   } catch (err) {

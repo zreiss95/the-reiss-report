@@ -1,48 +1,47 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
 
 export async function POST() {
+
   try {
 
-    const response =
-      NextResponse.json({
-        success: true,
-        message: "Logged out.",
-      });
+    const supabase =
+      await createClient();
 
 
+    await supabase.auth.signOut();
 
-    response.cookies.delete(
-      "admin-auth"
+
+    return NextResponse.json(
+      {
+        success:true,
+        message:"Logged out.",
+      },
+      {
+        status:200,
+      }
     );
 
 
-    response.cookies.delete(
-      "admin-csrf"
-    );
-
-
-
-    return response;
-
-
-
-  } catch (err: any) {
+  } catch (err) {
 
     console.error(
-      "Admin logout error:",
+      "Logout error:",
       err
     );
 
 
     return NextResponse.json(
       {
-        success: false,
-        error: "Logout failed.",
+        success:false,
+        error:"Logout failed.",
       },
       {
-        status: 500,
+        status:500,
       }
     );
 
   }
+
 }

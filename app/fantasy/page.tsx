@@ -1,5 +1,6 @@
 import FantasyRankingBoard from "@/lib/components/fantasy/FantasyRankingBoard";
 import { getFantasyADP } from "@/lib/db/fantasyADP";
+import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,6 +17,10 @@ export default async function FantasyPage() {
         color: "white",
       }}
     >
+      <div style={{ marginBottom: 20 }}>
+        <BackButton />
+      </div>
+
       <h1
         style={{
           fontSize: 42,

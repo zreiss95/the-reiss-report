@@ -17,34 +17,11 @@ export default function HomePage() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "30px 24px 60px",
+          padding: "10px 24px 50px",
         }}
       >
 
-        {/* Top Navigation */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            marginBottom: 25,
-          }}
-        >
-          <Link
-  href="/admin/login"
-  style={{
-    padding: "5px 10px",
-    borderRadius: 6,
-    background: "#2f3749",
-    color: "white",
-    textDecoration: "none",
-    fontSize: 12,
-    fontWeight: 500,
-    border: "1px solid #334155",
-  }}
->
-  ⚙️ Admin
-</Link>
-        </div>
+
 
         <h1
           style={{
@@ -113,7 +90,7 @@ export default function HomePage() {
         style={{
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "0 24px 60px",
+          padding: "0 24px 35px",
         }}
       >
         <div

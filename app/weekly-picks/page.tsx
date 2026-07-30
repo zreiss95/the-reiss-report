@@ -11,6 +11,7 @@ import {
   getFeaturedStats,
 } from "../../lib/db/stats";
 import SeasonRecord from "../../lib/components/SeasonRecord";
+import BackButton from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,10 +23,15 @@ export default async function WeeklyPicks({
     week?: string;
   };
 }) {
+
+
+  
 const currentWeek = 1;
 
 // Load current week games
 const currentGames = await getWeekGames(currentWeek);
+
+
 
 // Automatically grade current week
 await gradeWeek(currentGames);
@@ -164,6 +170,10 @@ return (
       padding: "20px",
     }}
   >
+      <div style={{ marginBottom: 20 }}>
+        <BackButton />
+      </div>
+
       <h1
         style={{
           fontSize: 48,
