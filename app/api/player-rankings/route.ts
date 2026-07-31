@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
         (row: any) => {
 
           const myRank =
-            Number(row.myRank ?? 0);
-
+  Number(row.myRank ?? null);
+        
 
           const consensusRank =
             Number(row.consensusRank ?? 0);

@@ -27,7 +27,7 @@ export default async function TeamRankingsPage() {
           marginBottom: 30,
         }}
       >
-        🏈 Team Rankings
+        📊 Team Rankings
       </h1>
 
       <p

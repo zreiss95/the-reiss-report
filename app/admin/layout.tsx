@@ -19,8 +19,7 @@ export default async function AdminLayout({
   } = await supabase.auth.getUser();
 
 
-  console.log("ADMIN USER:", user);
-  console.log("ADMIN USER ERROR:", userError);
+  
 
 
   if (!user) {
@@ -38,10 +37,7 @@ const {
   .single();
 
 
-console.log("USER ID:", user.id);
-console.log("USER EMAIL:", user.email);
-console.log("PROFILE:", profile);
-console.log("PROFILE ERROR:", profileError);
+
 
 
   if (!profile) {

@@ -1,8 +1,7 @@
 import { getWeekGames } from "../../../lib/api/getWeekGames";
 import { getPicks } from "../../../lib/db/picks";
 import AdminEditor from "../../../lib/components/AdminEditor";
-import { isAdminAuthenticated } from "../../../lib/auth/admin";
-import { redirect } from "next/navigation";
+
 
 
 export default async function WeeklyPicksAdmin({
@@ -12,14 +11,6 @@ export default async function WeeklyPicksAdmin({
     week?: string;
   };
 }) {
-
-  const authenticated =
-    await isAdminAuthenticated();
-
-
-  if (!authenticated) {
-    redirect("/login");
-  }
 
 
   const selectedWeek =
