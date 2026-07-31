@@ -9,88 +9,138 @@ export default function HomePage() {
         background: "#080B0F",
         color: "white",
         fontFamily: "Arial, sans-serif",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* Hero */}
-
-      <section
+      {/* Full Page Colts Watermark */}
+      <div
         style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "10px 24px 50px",
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          pointerEvents: "none",
+          zIndex: 0,
         }}
       >
-
-
-
-        <h1
+        <img
+          src="/logos/colts-logo.png"
+          alt=""
           style={{
-            fontSize: 54,
-            marginBottom: 12,
-            fontWeight: 800,
+            width: "1600px",
+            height: "1150px",
+            objectFit: "contain",
+            opacity: 0.1,
           }}
-        >
-          🏈 The Reiss Report
-        </h1>
+        />
+      </div>
 
-        <p
-          style={{
-            color: "#A0AEC0",
-            fontSize: 22,
-            marginBottom: 30,
-          }}
-        >
-          NFL Picks • Survivor • Best Bets • Rankings • Fantasy
-        </p>
-
+      {/* Hero */}
+      <section
+        style={{
+          position: "relative",
+          minHeight: 240,
+          display: "flex",
+          alignItems: "flex-start",
+          overflow: "hidden",
+          zIndex: 1,
+        }}
+      >
+        {/* Dark Tint */}
         <div
           style={{
-            display: "flex",
-            gap: 15,
-            flexWrap: "wrap",
+            position: "absolute",
+            inset: 0,
+            background: "rgba(8,11,15,0.15)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
+        {/* Hero Content */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            maxWidth: 1200,
+            margin: "0 auto",
+            width: "100%",
+            padding: "20px 24px 10px",
           }}
         >
-          <Link href="/weekly-picks">
-            <button
-              style={{
-                background: "#16A34A",
-                color: "white",
-                padding: "14px 24px",
-                borderRadius: 10,
-                border: "none",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              View Weekly Picks
-            </button>
-          </Link>
+          <h1
+            style={{
+              fontSize: 54,
+              fontWeight: 800,
+              margin: "0 0 12px",
+            }}
+          >
+            🏈 The Reiss Report
+          </h1>
 
-          <Link href="/rankings">
-            <button
-              style={{
-                background: "#1E293B",
-                color: "white",
-                padding: "14px 24px",
-                borderRadius: 10,
-                border: "1px solid #334155",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Power Rankings
-            </button>
-          </Link>
+          <p
+            style={{
+              color: "#A0AEC0",
+              fontSize: 22,
+              marginBottom: 18,
+            }}
+          >
+            NFL Picks • Survivor • Best Bets • Rankings • Fantasy
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 15,
+              flexWrap: "wrap",
+              marginBottom: 10,
+            }}
+          >
+            <Link href="/weekly-picks">
+              <button
+                style={{
+                  background: "#16A34A",
+                  color: "white",
+                  padding: "14px 24px",
+                  borderRadius: 10,
+                  border: "none",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                View Weekly Picks
+              </button>
+            </Link>
+
+            <Link href="/rankings">
+              <button
+                style={{
+                  background: "#1E293B",
+                  color: "white",
+                  padding: "14px 24px",
+                  borderRadius: 10,
+                  border: "1px solid #334155",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Power Rankings
+              </button>
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Stats */}
-
       <section
         style={{
+          position: "relative",
+          zIndex: 1,
           maxWidth: 1200,
           margin: "0 auto",
-          padding: "0 24px 35px",
+          padding: "10px 24px 35px",
         }}
       >
         <div
@@ -139,9 +189,10 @@ export default function HomePage() {
       </section>
 
       {/* Features */}
-
       <section
         style={{
+          position: "relative",
+          zIndex: 1,
           maxWidth: 1200,
           margin: "0 auto",
           padding: "0 24px 80px",

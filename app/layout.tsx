@@ -16,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning>
-        <PublicRouteSwitcher />
-
-        {children}
+        
+        <div className="site-content">
+          <PublicRouteSwitcher />
+          {children}
+        </div>
       </body>
     </html>
   );
