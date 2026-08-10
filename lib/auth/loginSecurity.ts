@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 
 const MAX_ATTEMPTS = 5;
@@ -13,7 +13,7 @@ export async function checkLoginLock(
   const {
     data,
     error,
-  } = await supabase
+  } = await supabaseAdmin
     .from("admin_login_attempts")
     .select("*")
     .eq("ip", ip)
@@ -55,7 +55,7 @@ export async function recordFailedLogin(
 
   const {
     data,
-  } = await supabase
+  } = await supabaseAdmin
     .from("admin_login_attempts")
     .select("*")
     .eq("ip", ip)
@@ -87,7 +87,7 @@ export async function recordFailedLogin(
 
   const {
     error,
-  } = await supabase
+    } = await supabaseAdmin
     .from("admin_login_attempts")
     .upsert(
       {
@@ -122,7 +122,7 @@ export async function clearFailedLogin(
 
   const {
     error,
-  } = await supabase
+  } = await supabaseAdmin
     .from("admin_login_attempts")
     .delete()
     .eq(
