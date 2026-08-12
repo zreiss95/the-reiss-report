@@ -1,219 +1,56 @@
 import Link from "next/link";
 import FeatureCard from "../lib/components/FeatureCard";
 
+const stats = [
+  ["Overall Record", "0-0"],
+  ["Best Bets", "0-0"],
+  ["Survivor", "0-0"],
+  ["ATS Record", "0-0"],
+];
+
 export default function HomePage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#080B0F",
-        color: "white",
-        fontFamily: "Arial, sans-serif",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
+    <main className="home-page">
       {/* Full Page Colts Watermark */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      >
-        <img
-          src="/logos/colts-logo.png"
-          alt=""
-          style={{
-            width: "1600px",
-            height: "1150px",
-            objectFit: "contain",
-            opacity: 0.1,
-          }}
-        />
+      <div className="home-watermark" aria-hidden="true">
+        <img src="/logos/colts-logo.png" alt="" />
       </div>
 
       {/* Hero */}
-      <section
-        style={{
-          position: "relative",
-          minHeight: 240,
-          display: "flex",
-          alignItems: "flex-start",
-          overflow: "hidden",
-          zIndex: 1,
-        }}
-      >
-        {/* Dark Tint */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(8,11,15,0.15)",
-            pointerEvents: "none",
-            zIndex: 0,
-          }}
-        />
+      <section className="home-hero">
+        <div className="home-hero-tint" aria-hidden="true" />
+        <div className="home-hero-content">
+          <h1>The Reiss Report</h1>
+          <p>NFL Picks • Survivor • Best Bets • Rankings • Fantasy</p>
 
-        {/* Hero Content */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            maxWidth: 1200,
-            margin: "0 auto",
-            width: "100%",
-            padding: "20px 24px 10px",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: 54,
-              fontWeight: 800,
-              margin: "0 0 12px",
-            }}
-          >
-            🏈 The Reiss Report
-          </h1>
-
-          <p
-            style={{
-              color: "#A0AEC0",
-              fontSize: 22,
-              marginBottom: 18,
-            }}
-          >
-            NFL Picks • Survivor • Best Bets • Rankings • Fantasy
-          </p>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 15,
-              flexWrap: "wrap",
-              marginBottom: 10,
-            }}
-          >
-            <Link href="/weekly-picks">
-              <button
-                style={{
-                  background: "#16A34A",
-                  color: "white",
-                  padding: "14px 24px",
-                  borderRadius: 10,
-                  border: "none",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                View Weekly Picks
-              </button>
+          <div className="home-hero-actions">
+            <Link href="/weekly-picks" className="home-button home-button-primary">
+              View Weekly Picks
             </Link>
-
-            <Link href="/rankings">
-              <button
-                style={{
-                  background: "#1E293B",
-                  color: "white",
-                  padding: "14px 24px",
-                  borderRadius: 10,
-                  border: "1px solid #334155",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Power Rankings
-              </button>
+            <Link href="/rankings" className="home-button home-button-secondary">
+              Power Rankings
             </Link>
           </div>
         </div>
       </section>
 
       {/* Stats */}
-      <section
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "10px 24px 35px",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-            gap: 20,
-          }}
-        >
-          {[
-            ["Overall Record", "0-0"],
-            ["Best Bets", "0-0"],
-            ["Survivor", "0-0"],
-            ["ATS Record", "0-0"],
-          ].map(([title, value]) => (
-            <div
-              key={title}
-              style={{
-                background: "#111827",
-                border: "1px solid #1F2937",
-                borderRadius: 14,
-                padding: 25,
-              }}
-            >
-              <div
-                style={{
-                  color: "#94A3B8",
-                  fontSize: 14,
-                }}
-              >
-                {title}
-              </div>
-
-              <div
-                style={{
-                  fontSize: 34,
-                  fontWeight: 800,
-                  marginTop: 10,
-                }}
-              >
-                {value}
-              </div>
+      <section className="home-section home-stats" aria-label="Current records">
+        <div className="home-grid home-grid-stats">
+          {stats.map(([title, value]) => (
+            <div key={title} className="home-stat-card">
+              <div className="home-stat-title">{title}</div>
+              <div className="home-stat-value">{value}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* Features */}
-      <section
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "0 24px 80px",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: 34,
-            marginBottom: 25,
-          }}
-        >
-          Everything You Need
-        </h2>
+      <section className="home-section home-features">
+        <h2>Everything You Need</h2>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-            gap: 20,
-          }}
-        >
+        <div className="home-grid home-grid-features">
           <FeatureCard
             title="Weekly Picks"
             description="Weekly NFL game predictions against the spread and straight up."
