@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 
@@ -126,7 +126,7 @@ opponent:
 
     const {
       error,
-    } = await supabase
+    } = await supabaseAdmin
       .from("survivor")
       .upsert(rows, {
         onConflict: "week,rank",

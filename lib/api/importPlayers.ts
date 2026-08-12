@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 
 export async function importPlayers(data: any) {
@@ -66,7 +66,7 @@ export async function importPlayers(data: any) {
 
   const {
     error,
-  } = await supabase
+  } = await supabaseAdmin
     .from("players")
     .upsert(
       players,

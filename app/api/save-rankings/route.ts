@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 const CURRENT_SEASON = 2026;
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
 
 
       let query =
-        supabase
+        supabaseAdmin
           .from("player_rankings")
           .update(updateData)
           .eq("season", CURRENT_SEASON);

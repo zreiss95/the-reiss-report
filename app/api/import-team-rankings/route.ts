@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdmin } from "@/lib/auth/requireAdmin";
 
 const CURRENT_SEASON = 2026;
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
 
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("team_rankings")
       .upsert(
         rows,
