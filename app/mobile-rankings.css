@@ -1,51 +1,23 @@
 @media (max-width: 700px) {
   /* Player Rankings: use the same compact geometry as the proven Fantasy ADP layout. */
-  .player-ranking-grid {
-    grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr);
-    gap: 5px;
-    align-items: start;
-  }
-
+  .player-ranking-grid { grid-template-columns: minmax(0, 1fr) 54px minmax(0, 1fr); gap: 5px; align-items: start; }
   .player-ranking-grid > div { min-width: 0; }
 
-  /* Reserve identical heading space in every column so a wrapped
-     "NFL.com Consensus" heading cannot push its first card down. */
-  .player-ranking-grid h2 {
-    height: 39px;
-    min-height: 39px;
-    margin: 0 0 14px;
-    font-size: 17px;
-    line-height: 1.15;
-    display: flex;
-    align-items: flex-start;
-  }
-
+  /* Identical heading footprint prevents the wrapped Consensus title from shifting rows. */
+  .player-ranking-grid h2 { height: 53px; min-height: 53px; margin: 0; padding-bottom: 14px; font-size: 17px; line-height: 1.15; display: flex; align-items: flex-start; }
   .player-ranking-column h2 { justify-content: flex-start; }
   .player-ranking-delta-column h2 { justify-content: center; text-align: center; }
 
-  .player-sortable-row {
-    box-sizing: border-box;
-    height: 68px;
-    min-height: 68px;
-    padding: 8px 7px;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-
+  .player-sortable-row { box-sizing: border-box; height: 68px; min-height: 68px; padding: 8px 7px; gap: 6px; margin-bottom: 8px; }
   .player-sortable-rank { width: 26px; flex: 0 0 26px; }
   .player-sortable-logo { width: 34px; height: 34px; flex: 0 0 34px; }
   .player-sortable-name { font-size: 14px; line-height: 1.05; overflow-wrap: normal; word-break: normal; }
   .player-sortable-meta { font-size: 10px; line-height: 1.1; }
 
   .player-ranking-delta-column { display: block; }
-  .player-ranking-delta {
-    box-sizing: border-box;
-    height: 68px;
-    min-height: 68px;
-    margin-bottom: 8px;
-    font-size: 13px;
-    line-height: 1;
-  }
+  /* No margins here: one exact 76px slot per delta (68px row + 8px gap),
+     eliminating cumulative margin-collapse/rounding drift down the list. */
+  .player-ranking-delta { box-sizing: border-box; height: 76px; min-height: 76px; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; line-height: 1; }
 
   .player-ranking-actions { flex-direction: column; }
   .player-ranking-actions button { width: 100%; }
