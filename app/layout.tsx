@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./mobile-rankings.css";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import PublicRouteSwitcher from "@/components/PublicRouteSwitcher";
