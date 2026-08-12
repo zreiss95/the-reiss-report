@@ -2,10 +2,22 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useState } from "react";
 import HeaderAuth from "./HeaderAuth";
+
+const links = [
+  ["Home", "/"],
+  ["Weekly Picks", "/weekly-picks"],
+  ["Survivor", "/survivor"],
+  ["Loser Survivor", "/loser-survivor"],
+  ["Player Rankings", "/rankings/players"],
+  ["Team Rankings", "/rankings/team"],
+  ["Fantasy ADP", "/fantasy"],
+] as const;
 
 export default function PublicRouteSwitcher() {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   if (
     pathname.startsWith("/admin") ||
@@ -15,46 +27,45 @@ export default function PublicRouteSwitcher() {
     return null;
   }
 
+  const closeMobileMenu = () => setMobileOpen(false);
+
   return (
-    <div
-      style={{
-        padding: 20,
-        borderBottom: "1px solid #24314f",
-        display: "flex",
-        gap: 20,
-        flexWrap: "wrap",
-        alignItems: "center",
-      }}
-    >
-      <Link href="/">Home</Link>
+    <nav className="site-nav" aria-label="Main navigation">
+      <div className="site-nav-links">
+        {links.map(([label, href]) => (
+          <Link key={href} href={href}>
+            {label}
+          </Link>
+        ))}
+      </div>
 
-      <Link href="/weekly-picks">
-        Weekly Picks
-      </Link>
-
-      <Link href="/survivor">
-        Survivor
-      </Link>
-
-      <Link href="/loser-survivor">
-        Loser Survivor
-      </Link>
-
-      <Link href="/rankings/players">
-        Player Rankings
-      </Link>
-
-      <Link href="/rankings/team">
-        Team Rankings
-      </Link>
-
-      <Link href="/fantasy">
-        Fantasy ADP
-      </Link>
-
-      <div style={{ marginLeft: "auto" }}>
+      <div className="site-nav-auth">
         <HeaderAuth />
       </div>
-    </div>
+
+      <button
+        type="button"
+        className="site-nav-mobile-trigger"
+        aria-expanded={mobileOpen}
+        aria-controls="mobile-site-navigation"
+        aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+        onClick={() => setMobileOpen((open) => !open)}
+      >
+        {mobileOpen ? "✕" : "☰"}
+      </button>
+
+      {mobileOpen && (
+        <div id="mobile-site-navigation" className="site-nav-mobile-menu">
+          {links.map(([label, href]) => (
+            <Link key={href} href={href} onClick={closeMobileMenu}>
+              {label}
+            </Link>
+          ))}
+          <div className="site-nav-mobile-auth">
+            <HeaderAuth />
+          </div>
+        </div>
+      )}
+    </nav>
   );
 }
