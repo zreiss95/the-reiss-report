@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import PublicRouteSwitcher from "@/components/PublicRouteSwitcher";
 
@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   title: "The Reiss Report",
   description:
     "NFL Picks, Survivor, DFS, Fantasy Football and Rankings",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
