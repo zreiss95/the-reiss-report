@@ -1,6 +1,4 @@
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #09090b; color: white; font-family: Arial, Helvetica, sans-serif; width: 100%; min-width: 0; }
 body { min-height: 100vh; overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
@@ -35,6 +33,37 @@ button { cursor: pointer; font: inherit; }
 .home-stat-title { color: #94A3B8; font-size: 14px; }
 .home-stat-value { font-size: 34px; font-weight: 800; margin-top: 10px; }
 
+.team-ranking-board { width: 100%; }
+.team-ranking-search { margin-bottom: 25px; }
+.team-ranking-search input { width: 100%; padding: 14px 18px; border-radius: 10px; border: 1px solid #334155; background: #111827; color: white; font-size: 16px; outline: none; }
+.team-ranking-grid { display: grid; grid-template-columns: minmax(0,1fr) 80px minmax(0,1fr); gap: 30px; align-items: start; }
+.team-ranking-grid h2 { margin: 0 0 20px; font-size: 26px; font-weight: 800; }
+.team-ranking-card, .sortable-team { display: flex; align-items: center; gap: 16px; padding: 14px 18px; margin-bottom: 8px; min-height: 78px; background: #172036; border-radius: 12px; border: 2px solid #1474ce; }
+.team-ranking-rank, .sortable-team-rank { width: 30px; flex: 0 0 30px; text-align: center; font-weight: 800; color: #94a3b8; }
+.team-ranking-name { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.team-ranking-name img, .sortable-team img { width: 46px; height: 46px; object-fit: contain; flex: 0 0 46px; }
+.team-ranking-name span, .sortable-team-name { min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
+.team-ranking-delta-column h2 { text-align: center; }
+.team-ranking-delta { height: 86px; display: flex; justify-content: center; align-items: center; font-weight: 800; font-size: 18px; }
+.team-ranking-delta.up { color: #22c55e; }
+.team-ranking-delta.down { color: #ef4444; }
+.team-ranking-delta.flat { color: #94a3b8; }
+.sortable-team { border-color: #2563eb; }
+.sortable-team.locked { opacity: .85; }
+.sortable-team.dragging { opacity: .6; background: #1e293b; }
+.sortable-team-name { flex: 1; display: flex; align-items: center; gap: 6px; font-size: 16px; }
+.sortable-team-note { color: #60a5fa; font-size: 15px; }
+.sortable-team-handle { cursor: grab; font-size: 24px; color: #94a3b8; padding: 0 8px; user-select: none; touch-action: none; }
+.team-ranking-actions { display: flex; justify-content: center; gap: 15px; margin-top: 35px; }
+.team-ranking-actions button { padding: 14px 28px; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 16px; min-height: 48px; }
+.team-ranking-save { background: #16a34a; }
+.team-ranking-finalize { background: #dc2626; }
+
+.schedule-page { width: min(100% - 40px, 1000px); margin: 40px auto; padding: 0; color: white; }
+.schedule-page h1 { font-size: clamp(34px,6vw,48px); line-height: 1.1; margin: 0 0 28px; }
+.schedule-game { margin-bottom: 18px; padding: 20px; border: 1px solid #333; border-radius: 12px; display: flex; gap: 10px; align-items: center; overflow-wrap: anywhere; }
+.schedule-at { color: #94a3b8; flex: 0 0 auto; }
+
 @media (max-width: 900px) {
   .home-grid-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .home-grid-features { grid-template-columns: repeat(2,minmax(0,1fr)); }
@@ -48,7 +77,6 @@ button { cursor: pointer; font: inherit; }
   .site-nav-mobile-menu a { display: block; padding: 13px 10px; border-radius: 8px; min-height: 44px; }
   .site-nav-mobile-menu a:active, .site-nav-mobile-menu a:hover { background: #151b2b; }
   .site-nav-mobile-auth { padding: 10px; border-top: 1px solid #24314f; margin-top: 6px; }
-
   .home-watermark img { width: 150vw; max-width: none; max-height: 60vh; opacity: .07; }
   .home-hero { min-height: 0; }
   .home-hero-content, .home-stats, .home-features { padding-left: 16px; padding-right: 16px; }
@@ -61,7 +89,6 @@ button { cursor: pointer; font: inherit; }
   .home-stat-value { font-size: 30px; }
   .home-features { padding-bottom: 48px; }
 
-  /* Survivor / Loser Survivor */
   main[style*="maxWidth:1000px"], main[style*="1000px"] { width: calc(100% - 24px) !important; margin: 24px auto !important; padding: 12px !important; }
   main[style*="maxWidth:1000px"] h1, main[style*="1000px"] h1 { font-size: clamp(34px,10vw,48px) !important; line-height: 1.08 !important; }
   main[style*="maxWidth:1000px"] h2, main[style*="1000px"] h2 { font-size: 26px !important; line-height: 1.2 !important; overflow-wrap: anywhere; }
@@ -69,20 +96,27 @@ button { cursor: pointer; font: inherit; }
   main[style*="maxWidth:1000px"] img { max-width: 100%; }
   main[style*="maxWidth:1000px"] div[style*="fontSize:32"] { font-size: clamp(24px,7vw,32px) !important; overflow-wrap: anywhere; }
 
-  /* Rankings landing + player-position landing pages */
   main[style*="1200px"], main[style*="1400px"] { width: calc(100% - 24px) !important; padding: 24px 12px !important; }
   main[style*="1200px"] h1, main[style*="1400px"] h1 { font-size: clamp(34px,10vw,42px) !important; line-height: 1.08 !important; }
   main[style*="1200px"] p, main[style*="1400px"] p { overflow-wrap: anywhere; }
   main[style*="1200px"] > div[style*="grid"], main[style*="1400px"] > div[style*="grid"] { grid-template-columns: minmax(0,1fr) !important; }
   main[style*="1200px"] > div[style*="grid"] > a > div, main[style*="1400px"] > div[style*="grid"] > a > div { padding: 22px !important; }
-
-  /* Fantasy and Team Rankings page frames; preserve the data boards. */
   main[style*="1500px"] { width: calc(100% - 24px) !important; margin: 24px auto !important; padding: 12px !important; }
   main[style*="1500px"] h1 { font-size: clamp(32px,9vw,42px) !important; line-height: 1.08 !important; }
   main[style*="1500px"] > p { line-height: 1.5; }
   main[style*="1500px"] > * { max-width: 100%; }
 
-  /* Wide data tables become deliberate horizontal-scroll areas. */
+  .team-ranking-grid { grid-template-columns: minmax(0,1fr); gap: 28px; }
+  .team-ranking-delta-column { display: none; }
+  .team-ranking-grid h2 { font-size: 23px; }
+  .team-ranking-card, .sortable-team { min-height: 68px; padding: 12px; gap: 10px; }
+  .team-ranking-name img, .sortable-team img { width: 40px; height: 40px; flex-basis: 40px; }
+  .team-ranking-actions { flex-direction: column; }
+  .team-ranking-actions button { width: 100%; }
+
+  .schedule-page { width: calc(100% - 24px); margin: 24px auto; }
+  .schedule-game { padding: 16px 14px; align-items: flex-start; flex-wrap: wrap; }
+
   main table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   main table th, main table td { white-space: nowrap; }
   main input, main select, main textarea { max-width: 100%; }
