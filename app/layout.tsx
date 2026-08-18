@@ -4,7 +4,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import PublicRouteSwitcher from "@/components/PublicRouteSwitcher";
 
-const siteUrl = "https://reissreport.com";
+const siteUrl = "https://www.reissreport.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
