@@ -1,14 +1,33 @@
 import Link from "next/link";
 import FeatureCard from "../lib/components/FeatureCard";
+import { getSeasonStats, getFeaturedStats } from "../lib/db/stats";
 
-const stats = [
-  ["Overall Record", "0-0"],
-  ["Best Bets", "0-0"],
-  ["Survivor", "0-0"],
-  ["ATS Record", "0-0"],
-];
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [seasonStats, featuredStats] = await Promise.all([
+    getSeasonStats(),
+    getFeaturedStats(),
+  ]);
+
+  const overallWins =
+    seasonStats.moneyline.wins + seasonStats.ats.wins + seasonStats.total.wins;
+  const overallLosses =
+    seasonStats.moneyline.losses + seasonStats.ats.losses + seasonStats.total.losses;
+
+  const bestBetWins =
+    featuredStats.moneyline.wins + featuredStats.ats.wins + featuredStats.total.wins;
+  const bestBetLosses =
+    featuredStats.moneyline.losses + featuredStats.ats.losses + featuredStats.total.losses;
+
+  const stats = [
+    ["Overall Record", `${overallWins}-${overallLosses}`],
+    ["Best Bets", `${bestBetWins}-${bestBetLosses}`],
+    ["Survivor", "0-0"],
+    ["ATS Record", `${seasonStats.ats.wins}-${seasonStats.ats.losses}`],
+  ];
+
   return (
     <main className="home-page">
       {/* Full Page Colts Watermark */}
