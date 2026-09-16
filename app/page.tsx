@@ -1,48 +1,115 @@
 import Link from "next/link";
 import FeatureCard from "../lib/components/FeatureCard";
-import { getSeasonStats, getFeaturedStats } from "../lib/db/stats";
 import { getAllSurvivor } from "../lib/db/survivor";
+import { getPicks } from "../lib/db/picks";
 import { getWeekGames } from "../lib/api/getWeekGames";
-import { gradeWeek } from "../lib/gradeWeek";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+type Record = { wins: number; losses: number; pushes: number };
+
+function emptyRecord(): Record {
+  return { wins: 0, losses: 0, pushes: 0 };
+}
+
+function addResult(record: Record, result: "WIN" | "LOSS" | "PUSH") {
+  if (result === "WIN") record.wins += 1;
+  else if (result === "LOSS") record.losses += 1;
+  else record.pushes += 1;
+}
+
+function isFeatured(value: any) {
+  return value === 1 || value === true || value === "1" || value === "true";
+}
+
 export default async function HomePage() {
-  // Grade every week that has started so the homepage record is always current.
-  // gradeWeek skips games that ESPN does not mark completed.
+  // Calculate homepage records directly from the saved picks and ESPN final scores.
+  // This avoids depending on result columns being written back to Supabase first.
   const weeks = Array.from({ length: 18 }, (_, index) => index + 1);
-  const schedules = await Promise.all(weeks.map((week) => getWeekGames(week)));
-
-  for (const games of schedules) {
-    if (games.length > 0) {
-      await gradeWeek(games);
-    }
-  }
-
-  const [seasonStats, featuredStats, survivorPicks] = await Promise.all([
-    getSeasonStats(),
-    getFeaturedStats(),
+  const [schedules, picks, survivorPicks] = await Promise.all([
+    Promise.all(weeks.map((week) => getWeekGames(week))),
+    getPicks(),
     getAllSurvivor(),
   ]);
 
-  const overallWins =
-    seasonStats.moneyline.wins + seasonStats.ats.wins + seasonStats.total.wins;
-  const overallLosses =
-    seasonStats.moneyline.losses + seasonStats.ats.losses + seasonStats.total.losses;
+  const moneyline = emptyRecord();
+  const ats = emptyRecord();
+  const totals = emptyRecord();
+  const bestBets = emptyRecord();
 
-  const bestBetWins =
-    featuredStats.moneyline.wins + featuredStats.ats.wins + featuredStats.total.wins;
-  const bestBetLosses =
-    featuredStats.moneyline.losses + featuredStats.ats.losses + featuredStats.total.losses;
+  for (const pick of picks as any[]) {
+    const week = Number(pick.week);
+    if (!week || week < 1 || week > 18) continue;
 
-  // Survivor record is based on the #1 survivor pick for each week.
-  // A survivor pick wins when its selected team wins that week's game.
+    const games = schedules[week - 1] ?? [];
+    const game = games.find((item: any) => String(item.id) === String(pick.gameid));
+    if (!game || game.status?.type?.completed !== true) continue;
+
+    const competition = game.competitions?.[0];
+    const home = competition?.competitors?.find((c: any) => c.homeAway === "home");
+    const away = competition?.competitors?.find((c: any) => c.homeAway === "away");
+    if (!home || !away) continue;
+
+    const homeScore = Number(home.score ?? 0);
+    const awayScore = Number(away.score ?? 0);
+
+    // Moneyline
+    if (pick.moneylinepick && homeScore !== awayScore) {
+      const winner = homeScore > awayScore ? home.team.displayName : away.team.displayName;
+      const result: "WIN" | "LOSS" = winner === pick.moneylinepick ? "WIN" : "LOSS";
+      addResult(moneyline, result);
+      if (isFeatured(pick.featuredmoneyline)) addResult(bestBets, result);
+    }
+
+    // ATS. The saved spread belongs to the selected ATS team.
+    if (pick.atspick && pick.spread !== null && pick.spread !== undefined && pick.spread !== "") {
+      const spread = Number(pick.spread);
+      let adjustedPickedScore: number | null = null;
+      let opponentScore: number | null = null;
+
+      if (pick.atspick === home.team.displayName) {
+        adjustedPickedScore = homeScore + spread;
+        opponentScore = awayScore;
+      } else if (pick.atspick === away.team.displayName) {
+        adjustedPickedScore = awayScore + spread;
+        opponentScore = homeScore;
+      }
+
+      if (adjustedPickedScore !== null && opponentScore !== null) {
+        const result: "WIN" | "LOSS" | "PUSH" =
+          adjustedPickedScore > opponentScore
+            ? "WIN"
+            : adjustedPickedScore < opponentScore
+            ? "LOSS"
+            : "PUSH";
+        addResult(ats, result);
+        if (isFeatured(pick.featuredats)) addResult(bestBets, result);
+      }
+    }
+
+    // Total
+    if (pick.totalpick && pick.totalline !== null && pick.totalline !== undefined && pick.totalline !== "") {
+      const points = homeScore + awayScore;
+      const line = Number(pick.totalline);
+      const selection = String(pick.totalpick).toLowerCase();
+      let result: "WIN" | "LOSS" | "PUSH" = "PUSH";
+
+      if (selection === "over") {
+        result = points > line ? "WIN" : points < line ? "LOSS" : "PUSH";
+      } else if (selection === "under") {
+        result = points < line ? "WIN" : points > line ? "LOSS" : "PUSH";
+      }
+
+      addResult(totals, result);
+      if (isFeatured(pick.featuredtotal)) addResult(bestBets, result);
+    }
+  }
+
+  // Survivor record uses the #1 survivor pick for each week.
   const survivorByWeek = new Map<number, any>();
   for (const pick of survivorPicks) {
-    if (Number(pick.rank) === 1) {
-      survivorByWeek.set(Number(pick.week), pick);
-    }
+    if (Number(pick.rank) === 1) survivorByWeek.set(Number(pick.week), pick);
   }
 
   let survivorWins = 0;
@@ -53,45 +120,36 @@ export default async function HomePage() {
     const game = games.find((item: any) => {
       if (pick.gameId && item.id === String(pick.gameId)) return true;
       if (pick.gameid && item.id === String(pick.gameid)) return true;
-
       const competitors = item.competitions?.[0]?.competitors ?? [];
-      return competitors.some(
-        (competitor: any) => competitor.team?.displayName === pick.team
-      );
+      return competitors.some((c: any) => c.team?.displayName === pick.team);
     });
 
     if (!game || game.status?.type?.completed !== true) continue;
-
     const competitors = game.competitions?.[0]?.competitors ?? [];
-    const selected = competitors.find(
-      (competitor: any) => competitor.team?.displayName === pick.team
-    );
-
+    const selected = competitors.find((c: any) => c.team?.displayName === pick.team);
     if (!selected) continue;
 
+    const opponent = competitors.find((c: any) => c !== selected);
     const selectedScore = Number(selected.score ?? 0);
-    const opponent = competitors.find((competitor: any) => competitor !== selected);
     const opponentScore = Number(opponent?.score ?? 0);
-
     if (selectedScore > opponentScore) survivorWins += 1;
     else if (selectedScore < opponentScore) survivorLosses += 1;
   }
 
+  // "Overall Record" is the straight-up/moneyline record; ATS has its own card.
   const stats = [
-    ["Overall Record", `${overallWins}-${overallLosses}`],
-    ["Best Bets", `${bestBetWins}-${bestBetLosses}`],
+    ["Overall Record", `${moneyline.wins}-${moneyline.losses}`],
+    ["Best Bets", `${bestBets.wins}-${bestBets.losses}${bestBets.pushes ? `-${bestBets.pushes}` : ""}`],
     ["Survivor", `${survivorWins}-${survivorLosses}`],
-    ["ATS Record", `${seasonStats.ats.wins}-${seasonStats.ats.losses}`],
+    ["ATS Record", `${ats.wins}-${ats.losses}${ats.pushes ? `-${ats.pushes}` : ""}`],
   ];
 
   return (
     <main className="home-page">
-      {/* Full Page Colts Watermark */}
       <div className="home-watermark" aria-hidden="true">
         <img src="/logos/colts-logo.png" alt="" />
       </div>
 
-      {/* Hero */}
       <section className="home-hero">
         <div className="home-hero-tint" aria-hidden="true" />
         <div className="home-hero-content">
@@ -109,7 +167,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Stats */}
       <section className="home-section home-stats" aria-label="Current records">
         <div className="home-grid home-grid-stats">
           {stats.map(([title, value]) => (
@@ -121,46 +178,15 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
       <section className="home-section home-features">
         <h2>Everything You Need</h2>
-
         <div className="home-grid home-grid-features">
-          <FeatureCard
-            title="Weekly Picks"
-            description="Weekly NFL game predictions against the spread and straight up."
-            href="/weekly-picks"
-          />
-
-          <FeatureCard
-            title="Survivor Picks"
-            description="Safest survivor selections every NFL week."
-            href="/survivor"
-          />
-
-          <FeatureCard
-            title="Loser Survivor"
-            description="Reverse survivor selections each week."
-            href="/loser-survivor"
-          />
-
-          <FeatureCard
-            title="Power Rankings"
-            description="Rankings including QB, RB, WR, TE, K, DEF and Team Rankings."
-            href="/rankings"
-          />
-
-          <FeatureCard
-            title="Fantasy Rankings"
-            description="Fantasy football rankings, ADP comparisons, tiers and draft boards."
-            href="/fantasy"
-          />
-
-          <FeatureCard
-            title="DFS"
-            description="Daily Fantasy tools and projections."
-            disabled
-          />
+          <FeatureCard title="Weekly Picks" description="Weekly NFL game predictions against the spread and straight up." href="/weekly-picks" />
+          <FeatureCard title="Survivor Picks" description="Safest survivor selections every NFL week." href="/survivor" />
+          <FeatureCard title="Loser Survivor" description="Reverse survivor selections each week." href="/loser-survivor" />
+          <FeatureCard title="Power Rankings" description="Rankings including QB, RB, WR, TE, K, DEF and Team Rankings." href="/rankings" />
+          <FeatureCard title="Fantasy Rankings" description="Fantasy football rankings, ADP comparisons, tiers and draft boards." href="/fantasy" />
+          <FeatureCard title="DFS" description="Daily Fantasy tools and projections." disabled />
         </div>
       </section>
     </main>
