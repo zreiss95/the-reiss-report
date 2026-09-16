@@ -11,13 +11,13 @@ export async function updatePickResult(
   const { error } = await supabase
     .from("picks")
     .update({
-      moneylineResult,
-      atsResult,
-      totalResult,
-      homeScore,
-      awayScore,
+      moneylineresult: moneylineResult,
+      atsresult: atsResult,
+      totalresult: totalResult,
+      homescore: homeScore,
+      awayscore: awayScore,
     })
-    .eq("gameId", gameId);
+    .eq("gameid", gameId);
 
   if (error) {
     console.error(
