@@ -1,7 +1,7 @@
 import Link from "next/link";
 import FeatureCard from "../lib/components/FeatureCard";
 import { getAllSurvivor } from "../lib/db/survivor";
-import { getPicks } from "../lib/db/picks";
+import { getPicks, getFeaturedPicks } from "../lib/db/picks";
 import { getWeekGames } from "../lib/api/getWeekGames";
 
 export const dynamic = "force-dynamic";
@@ -19,19 +19,26 @@ function addResult(record: Record, result: "WIN" | "LOSS" | "PUSH") {
   else record.pushes += 1;
 }
 
-function isFeatured(value: any) {
-  return value === 1 || value === true || value === "1" || value === "true";
-}
-
 export default async function HomePage() {
-  // Calculate homepage records directly from the saved picks and ESPN final scores.
-  // This avoids depending on result columns being written back to Supabase first.
   const weeks = Array.from({ length: 18 }, (_, index) => index + 1);
-  const [schedules, picks, survivorPicks] = await Promise.all([
+  const [schedules, picks, survivorPicks, featuredByWeek] = await Promise.all([
     Promise.all(weeks.map((week) => getWeekGames(week))),
     getPicks(),
     getAllSurvivor(),
+    Promise.all(weeks.map((week) => getFeaturedPicks(week))),
   ]);
+
+  // Best Bets must exactly mirror the three featured blocks shown on Weekly Picks:
+  // one Moneyline, one ATS and one Total per week. getFeaturedPicks uses the same
+  // selection logic as that page, so stale/duplicate featured flags cannot create
+  // extra homepage bets.
+  const featuredKeys = new Set<string>();
+  featuredByWeek.forEach((featured: any, index) => {
+    const week = index + 1;
+    if (featured.moneyline?.gameid) featuredKeys.add(`${week}:moneyline:${featured.moneyline.gameid}`);
+    if (featured.ats?.gameid) featuredKeys.add(`${week}:ats:${featured.ats.gameid}`);
+    if (featured.total?.gameid) featuredKeys.add(`${week}:total:${featured.total.gameid}`);
+  });
 
   const moneyline = emptyRecord();
   const ats = emptyRecord();
@@ -54,15 +61,13 @@ export default async function HomePage() {
     const homeScore = Number(home.score ?? 0);
     const awayScore = Number(away.score ?? 0);
 
-    // Moneyline
     if (pick.moneylinepick && homeScore !== awayScore) {
       const winner = homeScore > awayScore ? home.team.displayName : away.team.displayName;
       const result: "WIN" | "LOSS" = winner === pick.moneylinepick ? "WIN" : "LOSS";
       addResult(moneyline, result);
-      if (isFeatured(pick.featuredmoneyline)) addResult(bestBets, result);
+      if (featuredKeys.has(`${week}:moneyline:${pick.gameid}`)) addResult(bestBets, result);
     }
 
-    // ATS. The saved spread belongs to the selected ATS team.
     if (pick.atspick && pick.spread !== null && pick.spread !== undefined && pick.spread !== "") {
       const spread = Number(pick.spread);
       let adjustedPickedScore: number | null = null;
@@ -78,35 +83,26 @@ export default async function HomePage() {
 
       if (adjustedPickedScore !== null && opponentScore !== null) {
         const result: "WIN" | "LOSS" | "PUSH" =
-          adjustedPickedScore > opponentScore
-            ? "WIN"
-            : adjustedPickedScore < opponentScore
-            ? "LOSS"
-            : "PUSH";
+          adjustedPickedScore > opponentScore ? "WIN" : adjustedPickedScore < opponentScore ? "LOSS" : "PUSH";
         addResult(ats, result);
-        if (isFeatured(pick.featuredats)) addResult(bestBets, result);
+        if (featuredKeys.has(`${week}:ats:${pick.gameid}`)) addResult(bestBets, result);
       }
     }
 
-    // Total
     if (pick.totalpick && pick.totalline !== null && pick.totalline !== undefined && pick.totalline !== "") {
       const points = homeScore + awayScore;
       const line = Number(pick.totalline);
       const selection = String(pick.totalpick).toLowerCase();
       let result: "WIN" | "LOSS" | "PUSH" = "PUSH";
 
-      if (selection === "over") {
-        result = points > line ? "WIN" : points < line ? "LOSS" : "PUSH";
-      } else if (selection === "under") {
-        result = points < line ? "WIN" : points > line ? "LOSS" : "PUSH";
-      }
+      if (selection === "over") result = points > line ? "WIN" : points < line ? "LOSS" : "PUSH";
+      else if (selection === "under") result = points < line ? "WIN" : points > line ? "LOSS" : "PUSH";
 
       addResult(totals, result);
-      if (isFeatured(pick.featuredtotal)) addResult(bestBets, result);
+      if (featuredKeys.has(`${week}:total:${pick.gameid}`)) addResult(bestBets, result);
     }
   }
 
-  // Survivor record uses the #1 survivor pick for each week.
   const survivorByWeek = new Map<number, any>();
   for (const pick of survivorPicks) {
     if (Number(pick.rank) === 1) survivorByWeek.set(Number(pick.week), pick);
@@ -136,7 +132,6 @@ export default async function HomePage() {
     else if (selectedScore < opponentScore) survivorLosses += 1;
   }
 
-  // "Overall Record" is the straight-up/moneyline record; ATS has its own card.
   const stats = [
     ["Overall Record", `${moneyline.wins}-${moneyline.losses}`],
     ["Best Bets", `${bestBets.wins}-${bestBets.losses}${bestBets.pushes ? `-${bestBets.pushes}` : ""}`],
