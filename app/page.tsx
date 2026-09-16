@@ -9,11 +9,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type Record = { wins: number; losses: number; pushes: number };
-
-function emptyRecord(): Record {
-  return { wins: 0, losses: 0, pushes: 0 };
-}
-
+function emptyRecord(): Record { return { wins: 0, losses: 0, pushes: 0 }; }
 function addResult(record: Record, result: "WIN" | "LOSS" | "PUSH") {
   if (result === "WIN") record.wins += 1;
   else if (result === "LOSS") record.losses += 1;
@@ -23,11 +19,8 @@ function addResult(record: Record, result: "WIN" | "LOSS" | "PUSH") {
 export default async function HomePage() {
   const weeks = Array.from({ length: 18 }, (_, index) => index + 1);
   const [schedules, picks, survivorPicks, loserSurvivorPicks, featuredByWeek] = await Promise.all([
-    Promise.all(weeks.map((week) => getWeekGames(week))),
-    getPicks(),
-    getAllSurvivor(),
-    getAllLoserSurvivor(),
-    Promise.all(weeks.map((week) => getFeaturedPicks(week))),
+    Promise.all(weeks.map((week) => getWeekGames(week))), getPicks(), getAllSurvivor(),
+    getAllLoserSurvivor(), Promise.all(weeks.map((week) => getFeaturedPicks(week))),
   ]);
 
   const featuredKeys = new Set<string>();
@@ -45,16 +38,13 @@ export default async function HomePage() {
   for (const pick of picks as any[]) {
     const week = Number(pick.week);
     if (!week || week < 1 || week > 18) continue;
-
     const games = schedules[week - 1] ?? [];
     const game = games.find((item: any) => String(item.id) === String(pick.gameid));
     if (!game || game.status?.type?.completed !== true) continue;
-
     const competition = game.competitions?.[0];
     const home = competition?.competitors?.find((c: any) => c.homeAway === "home");
     const away = competition?.competitors?.find((c: any) => c.homeAway === "away");
     if (!home || !away) continue;
-
     const homeScore = Number(home.score ?? 0);
     const awayScore = Number(away.score ?? 0);
 
@@ -69,15 +59,8 @@ export default async function HomePage() {
       const spread = Number(pick.spread);
       let adjustedPickedScore: number | null = null;
       let opponentScore: number | null = null;
-
-      if (pick.atspick === home.team.displayName) {
-        adjustedPickedScore = homeScore + spread;
-        opponentScore = awayScore;
-      } else if (pick.atspick === away.team.displayName) {
-        adjustedPickedScore = awayScore + spread;
-        opponentScore = homeScore;
-      }
-
+      if (pick.atspick === home.team.displayName) { adjustedPickedScore = homeScore + spread; opponentScore = awayScore; }
+      else if (pick.atspick === away.team.displayName) { adjustedPickedScore = awayScore + spread; opponentScore = homeScore; }
       if (adjustedPickedScore !== null && opponentScore !== null) {
         const result: "WIN" | "LOSS" | "PUSH" = adjustedPickedScore > opponentScore ? "WIN" : adjustedPickedScore < opponentScore ? "LOSS" : "PUSH";
         addResult(ats, result);
@@ -97,56 +80,41 @@ export default async function HomePage() {
   }
 
   const survivorByWeek = new Map<number, any>();
-  for (const pick of survivorPicks) {
-    if (Number(pick.rank) === 1) survivorByWeek.set(Number(pick.week), pick);
-  }
-
-  let survivorWins = 0;
-  let survivorLosses = 0;
-
+  for (const pick of survivorPicks) if (Number(pick.rank) === 1) survivorByWeek.set(Number(pick.week), pick);
+  let survivorWins = 0, survivorLosses = 0;
   for (const [week, pick] of survivorByWeek.entries()) {
     const games = schedules[week - 1] ?? [];
     const game = games.find((item: any) => {
       if (pick.gameId && item.id === String(pick.gameId)) return true;
       if (pick.gameid && item.id === String(pick.gameid)) return true;
-      const competitors = item.competitions?.[0]?.competitors ?? [];
-      return competitors.some((c: any) => c.team?.displayName === pick.team);
+      return (item.competitions?.[0]?.competitors ?? []).some((c: any) => c.team?.displayName === pick.team);
     });
     if (!game || game.status?.type?.completed !== true) continue;
     const competitors = game.competitions?.[0]?.competitors ?? [];
     const selected = competitors.find((c: any) => c.team?.displayName === pick.team);
     const opponent = competitors.find((c: any) => c !== selected);
     if (!selected || !opponent) continue;
-    const selectedScore = Number(selected.score ?? 0);
-    const opponentScore = Number(opponent.score ?? 0);
+    const selectedScore = Number(selected.score ?? 0), opponentScore = Number(opponent.score ?? 0);
     if (selectedScore > opponentScore) survivorWins += 1;
     else if (selectedScore < opponentScore) survivorLosses += 1;
   }
 
   const loserByWeek = new Map<number, any>();
-  for (const pick of loserSurvivorPicks) {
-    if (Number(pick.rank) === 1) loserByWeek.set(Number(pick.week), pick);
-  }
-
-  let loserSurvivorWins = 0;
-  let loserSurvivorLosses = 0;
-
+  for (const pick of loserSurvivorPicks) if (Number(pick.rank) === 1) loserByWeek.set(Number(pick.week), pick);
+  let loserSurvivorWins = 0, loserSurvivorLosses = 0;
   for (const [week, pick] of loserByWeek.entries()) {
     const games = schedules[week - 1] ?? [];
     const game = games.find((item: any) => {
       if (pick.gameId && item.id === String(pick.gameId)) return true;
       if (pick.gameid && item.id === String(pick.gameid)) return true;
-      const competitors = item.competitions?.[0]?.competitors ?? [];
-      return competitors.some((c: any) => c.team?.displayName === pick.team);
+      return (item.competitions?.[0]?.competitors ?? []).some((c: any) => c.team?.displayName === pick.team);
     });
     if (!game || game.status?.type?.completed !== true) continue;
     const competitors = game.competitions?.[0]?.competitors ?? [];
     const selected = competitors.find((c: any) => c.team?.displayName === pick.team);
     const opponent = competitors.find((c: any) => c !== selected);
     if (!selected || !opponent) continue;
-    const selectedScore = Number(selected.score ?? 0);
-    const opponentScore = Number(opponent.score ?? 0);
-    // In Loser Survivor, correctly picking a team that loses is a win.
+    const selectedScore = Number(selected.score ?? 0), opponentScore = Number(opponent.score ?? 0);
     if (selectedScore < opponentScore) loserSurvivorWins += 1;
     else if (selectedScore > opponentScore) loserSurvivorLosses += 1;
   }
@@ -161,39 +129,23 @@ export default async function HomePage() {
 
   return (
     <main className="home-page">
+      <style>{`@media (min-width: 901px) { .home-grid-stats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; } .home-grid-stats .home-stat-card { padding: 20px 16px; min-width: 0; } .home-grid-stats .home-stat-title { white-space: nowrap; font-size: 13px; } .home-grid-stats .home-stat-value { font-size: 32px; } }`}</style>
       <div className="home-watermark" aria-hidden="true"><img src="/logos/colts-logo.png" alt="" /></div>
-      <section className="home-hero">
-        <div className="home-hero-tint" aria-hidden="true" />
-        <div className="home-hero-content">
-          <h1>The Reiss Report</h1>
-          <p>NFL Picks • Survivor • Best Bets • Rankings • Fantasy</p>
-          <div className="home-hero-actions">
-            <Link href="/weekly-picks" className="home-button home-button-primary">View Weekly Picks</Link>
-            <Link href="/rankings" className="home-button home-button-secondary">Power Rankings</Link>
-          </div>
-        </div>
-      </section>
-      <section className="home-section home-stats" aria-label="Current records">
-        <div className="home-grid home-grid-stats">
-          {stats.map(([title, value]) => (
-            <div key={title} className="home-stat-card">
-              <div className="home-stat-title">{title}</div>
-              <div className="home-stat-value">{value}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="home-section home-features">
-        <h2>Everything You Need</h2>
-        <div className="home-grid home-grid-features">
-          <FeatureCard title="Weekly Picks" description="Weekly NFL game predictions against the spread and straight up." href="/weekly-picks" />
-          <FeatureCard title="Survivor Picks" description="Safest survivor selections every NFL week." href="/survivor" />
-          <FeatureCard title="Loser Survivor" description="Reverse survivor selections each week." href="/loser-survivor" />
-          <FeatureCard title="Power Rankings" description="Rankings including QB, RB, WR, TE, K, DEF and Team Rankings." href="/rankings" />
-          <FeatureCard title="Fantasy Rankings" description="Fantasy football rankings, ADP comparisons, tiers and draft boards." href="/fantasy" />
-          <FeatureCard title="DFS" description="Daily Fantasy tools and projections." disabled />
-        </div>
-      </section>
+      <section className="home-hero"><div className="home-hero-tint" aria-hidden="true" /><div className="home-hero-content">
+        <h1>The Reiss Report</h1><p>NFL Picks • Survivor • Best Bets • Rankings • Fantasy</p>
+        <div className="home-hero-actions"><Link href="/weekly-picks" className="home-button home-button-primary">View Weekly Picks</Link><Link href="/rankings" className="home-button home-button-secondary">Power Rankings</Link></div>
+      </div></section>
+      <section className="home-section home-stats" aria-label="Current records"><div className="home-grid home-grid-stats">
+        {stats.map(([title, value]) => <div key={title} className="home-stat-card"><div className="home-stat-title">{title}</div><div className="home-stat-value">{value}</div></div>)}
+      </div></section>
+      <section className="home-section home-features"><h2>Everything You Need</h2><div className="home-grid home-grid-features">
+        <FeatureCard title="Weekly Picks" description="Weekly NFL game predictions against the spread and straight up." href="/weekly-picks" />
+        <FeatureCard title="Survivor Picks" description="Safest survivor selections every NFL week." href="/survivor" />
+        <FeatureCard title="Loser Survivor" description="Reverse survivor selections each week." href="/loser-survivor" />
+        <FeatureCard title="Power Rankings" description="Rankings including QB, RB, WR, TE, K, DEF and Team Rankings." href="/rankings" />
+        <FeatureCard title="Fantasy Rankings" description="Fantasy football rankings, ADP comparisons, tiers and draft boards." href="/fantasy" />
+        <FeatureCard title="DFS" description="Daily Fantasy tools and projections." disabled />
+      </div></section>
     </main>
   );
 }
