@@ -1,6 +1,7 @@
 import Link from "next/link";
 import FeatureCard from "../lib/components/FeatureCard";
 import { getAllSurvivor } from "../lib/db/survivor";
+import { getAllLoserSurvivor } from "../lib/db/loserSurvivor";
 import { getPicks, getFeaturedPicks } from "../lib/db/picks";
 import { getWeekGames } from "../lib/api/getWeekGames";
 
@@ -21,15 +22,14 @@ function addResult(record: Record, result: "WIN" | "LOSS" | "PUSH") {
 
 export default async function HomePage() {
   const weeks = Array.from({ length: 18 }, (_, index) => index + 1);
-  const [schedules, picks, survivorPicks, featuredByWeek] = await Promise.all([
+  const [schedules, picks, survivorPicks, loserSurvivorPicks, featuredByWeek] = await Promise.all([
     Promise.all(weeks.map((week) => getWeekGames(week))),
     getPicks(),
     getAllSurvivor(),
+    getAllLoserSurvivor(),
     Promise.all(weeks.map((week) => getFeaturedPicks(week))),
   ]);
 
-  // Best Bets exactly mirror the three featured blocks shown on Weekly Picks:
-  // one Moneyline, one ATS and one Total per week.
   const featuredKeys = new Set<string>();
   featuredByWeek.forEach((featured: any, index) => {
     const week = index + 1;
@@ -79,8 +79,7 @@ export default async function HomePage() {
       }
 
       if (adjustedPickedScore !== null && opponentScore !== null) {
-        const result: "WIN" | "LOSS" | "PUSH" =
-          adjustedPickedScore > opponentScore ? "WIN" : adjustedPickedScore < opponentScore ? "LOSS" : "PUSH";
+        const result: "WIN" | "LOSS" | "PUSH" = adjustedPickedScore > opponentScore ? "WIN" : adjustedPickedScore < opponentScore ? "LOSS" : "PUSH";
         addResult(ats, result);
         if (featuredKeys.has(`${week}:ats:${pick.gameid}`)) addResult(bestBets, result);
       }
@@ -91,10 +90,8 @@ export default async function HomePage() {
       const line = Number(pick.totalline);
       const selection = String(pick.totalpick).toLowerCase();
       let result: "WIN" | "LOSS" | "PUSH" = "PUSH";
-
       if (selection === "over") result = points > line ? "WIN" : points < line ? "LOSS" : "PUSH";
       else if (selection === "under") result = points < line ? "WIN" : points > line ? "LOSS" : "PUSH";
-
       if (featuredKeys.has(`${week}:total:${pick.gameid}`)) addResult(bestBets, result);
     }
   }
@@ -115,49 +112,67 @@ export default async function HomePage() {
       const competitors = item.competitions?.[0]?.competitors ?? [];
       return competitors.some((c: any) => c.team?.displayName === pick.team);
     });
-
     if (!game || game.status?.type?.completed !== true) continue;
     const competitors = game.competitions?.[0]?.competitors ?? [];
     const selected = competitors.find((c: any) => c.team?.displayName === pick.team);
-    if (!selected) continue;
-
     const opponent = competitors.find((c: any) => c !== selected);
+    if (!selected || !opponent) continue;
     const selectedScore = Number(selected.score ?? 0);
-    const opponentScore = Number(opponent?.score ?? 0);
+    const opponentScore = Number(opponent.score ?? 0);
     if (selectedScore > opponentScore) survivorWins += 1;
     else if (selectedScore < opponentScore) survivorLosses += 1;
+  }
+
+  const loserByWeek = new Map<number, any>();
+  for (const pick of loserSurvivorPicks) {
+    if (Number(pick.rank) === 1) loserByWeek.set(Number(pick.week), pick);
+  }
+
+  let loserSurvivorWins = 0;
+  let loserSurvivorLosses = 0;
+
+  for (const [week, pick] of loserByWeek.entries()) {
+    const games = schedules[week - 1] ?? [];
+    const game = games.find((item: any) => {
+      if (pick.gameId && item.id === String(pick.gameId)) return true;
+      if (pick.gameid && item.id === String(pick.gameid)) return true;
+      const competitors = item.competitions?.[0]?.competitors ?? [];
+      return competitors.some((c: any) => c.team?.displayName === pick.team);
+    });
+    if (!game || game.status?.type?.completed !== true) continue;
+    const competitors = game.competitions?.[0]?.competitors ?? [];
+    const selected = competitors.find((c: any) => c.team?.displayName === pick.team);
+    const opponent = competitors.find((c: any) => c !== selected);
+    if (!selected || !opponent) continue;
+    const selectedScore = Number(selected.score ?? 0);
+    const opponentScore = Number(opponent.score ?? 0);
+    // In Loser Survivor, correctly picking a team that loses is a win.
+    if (selectedScore < opponentScore) loserSurvivorWins += 1;
+    else if (selectedScore > opponentScore) loserSurvivorLosses += 1;
   }
 
   const stats = [
     ["ML Record", `${moneyline.wins}-${moneyline.losses}`],
     ["ATS Record", `${ats.wins}-${ats.losses}${ats.pushes ? `-${ats.pushes}` : ""}`],
     ["Best Bets", `${bestBets.wins}-${bestBets.losses}${bestBets.pushes ? `-${bestBets.pushes}` : ""}`],
-    ["Survivor", `${survivorWins}-${survivorLosses}`],
+    ["#1 Survivor", `${survivorWins}-${survivorLosses}`],
+    ["#1 Loser Survivor", `${loserSurvivorWins}-${loserSurvivorLosses}`],
   ];
 
   return (
     <main className="home-page">
-      <div className="home-watermark" aria-hidden="true">
-        <img src="/logos/colts-logo.png" alt="" />
-      </div>
-
+      <div className="home-watermark" aria-hidden="true"><img src="/logos/colts-logo.png" alt="" /></div>
       <section className="home-hero">
         <div className="home-hero-tint" aria-hidden="true" />
         <div className="home-hero-content">
           <h1>The Reiss Report</h1>
           <p>NFL Picks • Survivor • Best Bets • Rankings • Fantasy</p>
-
           <div className="home-hero-actions">
-            <Link href="/weekly-picks" className="home-button home-button-primary">
-              View Weekly Picks
-            </Link>
-            <Link href="/rankings" className="home-button home-button-secondary">
-              Power Rankings
-            </Link>
+            <Link href="/weekly-picks" className="home-button home-button-primary">View Weekly Picks</Link>
+            <Link href="/rankings" className="home-button home-button-secondary">Power Rankings</Link>
           </div>
         </div>
       </section>
-
       <section className="home-section home-stats" aria-label="Current records">
         <div className="home-grid home-grid-stats">
           {stats.map(([title, value]) => (
@@ -168,7 +183,6 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
-
       <section className="home-section home-features">
         <h2>Everything You Need</h2>
         <div className="home-grid home-grid-features">
