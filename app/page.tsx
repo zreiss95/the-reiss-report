@@ -28,10 +28,8 @@ export default async function HomePage() {
     Promise.all(weeks.map((week) => getFeaturedPicks(week))),
   ]);
 
-  // Best Bets must exactly mirror the three featured blocks shown on Weekly Picks:
-  // one Moneyline, one ATS and one Total per week. getFeaturedPicks uses the same
-  // selection logic as that page, so stale/duplicate featured flags cannot create
-  // extra homepage bets.
+  // Best Bets exactly mirror the three featured blocks shown on Weekly Picks:
+  // one Moneyline, one ATS and one Total per week.
   const featuredKeys = new Set<string>();
   featuredByWeek.forEach((featured: any, index) => {
     const week = index + 1;
@@ -42,7 +40,6 @@ export default async function HomePage() {
 
   const moneyline = emptyRecord();
   const ats = emptyRecord();
-  const totals = emptyRecord();
   const bestBets = emptyRecord();
 
   for (const pick of picks as any[]) {
@@ -98,7 +95,6 @@ export default async function HomePage() {
       if (selection === "over") result = points > line ? "WIN" : points < line ? "LOSS" : "PUSH";
       else if (selection === "under") result = points < line ? "WIN" : points > line ? "LOSS" : "PUSH";
 
-      addResult(totals, result);
       if (featuredKeys.has(`${week}:total:${pick.gameid}`)) addResult(bestBets, result);
     }
   }
@@ -133,10 +129,10 @@ export default async function HomePage() {
   }
 
   const stats = [
-    ["Overall Record", `${moneyline.wins}-${moneyline.losses}`],
+    ["ML Record", `${moneyline.wins}-${moneyline.losses}`],
+    ["ATS Record", `${ats.wins}-${ats.losses}${ats.pushes ? `-${ats.pushes}` : ""}`],
     ["Best Bets", `${bestBets.wins}-${bestBets.losses}${bestBets.pushes ? `-${bestBets.pushes}` : ""}`],
     ["Survivor", `${survivorWins}-${survivorLosses}`],
-    ["ATS Record", `${ats.wins}-${ats.losses}${ats.pushes ? `-${ats.pushes}` : ""}`],
   ];
 
   return (
