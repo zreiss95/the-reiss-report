@@ -135,8 +135,10 @@ export async function POST(req: NextRequest) {
 
     // The remaining table uses a required id column without a database default.
     // Generate stable row ids in the application so inserts satisfy NOT NULL.
+    // id is a bigint in these legacy tables. Use a numeric id that is
+    // deterministic per week/rank instead of a string such as "2-1".
     const rowsWithIds = rows.map((row: any) => ({
-      id: `${row.week}-${row.rank}`,
+      id: Number(row.week) * 10 + Number(row.rank),
       ...row,
     }));
 
