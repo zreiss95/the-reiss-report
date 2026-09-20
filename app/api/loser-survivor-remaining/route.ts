@@ -111,9 +111,16 @@ export async function POST(req: NextRequest) {
 
     if (deleteError) throw deleteError;
 
+    // The remaining table uses a required id column without a database default.
+    // Generate stable row ids in the application so inserts satisfy NOT NULL.
+    const rowsWithIds = rows.map((row: any) => ({
+      id: `${row.week}-${row.rank}`,
+      ...row,
+    }));
+
     const { error } = await supabaseAdmin
       .from("loser_survivor_remaining")
-      .insert(rows);
+      .insert(rowsWithIds);
 
     if (error) throw error;
 
