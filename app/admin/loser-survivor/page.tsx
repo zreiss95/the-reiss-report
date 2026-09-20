@@ -12,18 +12,11 @@ export default async function AdminLoserSurvivorPage({
     week?: string;
   };
 }) {
-  const currentGames = await getWeekGames();
-
-  const currentWeek =
-    currentGames[0]?.week?.number ?? 1;
-
-  const week =
-    Number(searchParams.week) || currentWeek;
-
-  const games =
-    week === currentWeek
-      ? currentGames
-      : await getWeekGames(week);
+  // Always request the exact week. The season-wide scoreboard endpoint can
+  // include games from multiple weeks, which made the picker show extra games.
+  const currentWeek = 1;
+  const week = Number(searchParams.week) || currentWeek;
+  const games = await getWeekGames(week);
 
 
   const savedOverall =
