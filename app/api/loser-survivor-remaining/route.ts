@@ -99,17 +99,23 @@ export async function POST(req: NextRequest) {
 
 
 
+    const week = rows[0]?.week;
+
+    // These tables do not currently have a database UNIQUE constraint on
+    // (week, rank), so replace this week's rows explicitly instead of using
+    // PostgREST upsert(onConflict), which causes the ON CONFLICT error.
+    const { error: deleteError } = await supabaseAdmin
+      .from("loser_survivor_remaining")
+      .delete()
+      .eq("week", week);
+
+    if (deleteError) throw deleteError;
+
     const { error } = await supabaseAdmin
       .from("loser_survivor_remaining")
-      .upsert(rows, {
-        onConflict: "week,rank",
-      });
+      .insert(rows);
 
-
-
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
 
 
