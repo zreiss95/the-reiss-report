@@ -103,8 +103,17 @@ export default async function SurvivorPage({
   const remainingPicks =
     await getSurvivorRemaining(week);
 
-  const selectedTeams = overallPicks
-    .filter((pick: any) => pick.rank === 1 && pick.team)
+  // Teams Selected should represent teams already used before the week being
+  // viewed, not the current week's #1 pick.
+  const previousWeekPicks = week > 1
+    ? (await Promise.all(
+        Array.from({ length: week - 1 }, (_, index) => getSurvivor(index + 1))
+      )).flat()
+    : [];
+
+  const selectedTeams = previousWeekPicks
+    .filter((pick: any) => Number(pick.rank) === 1 && pick.team)
+    .sort((a: any, b: any) => Number(a.week) - Number(b.week))
     .map((pick: any) => pick.team);
 
 
@@ -255,7 +264,7 @@ export default async function SurvivorPage({
                             fontWeight:900,
                           }}
                         >
-                          {pick.team}
+                          {String(pick.team ?? "").toLowerCase().replace(/\\b\\w/g, (char) => char.toUpperCase())}
                         </div>
 
 
@@ -265,7 +274,7 @@ export default async function SurvivorPage({
                             fontSize:18,
                           }}
                         >
-                          vs {pick.opponent}
+                          vs {String(pick.opponent ?? "").toLowerCase().replace(/\\b\\w/g, (char) => char.toUpperCase())}
                         </div>
 
                       </div>
