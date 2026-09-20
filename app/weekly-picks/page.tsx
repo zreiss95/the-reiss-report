@@ -6,10 +6,6 @@ import {
 } from "../../lib/db/picks";
 import { getWeekGames } from "../../lib/api/getWeekGames";
 import { gradeWeek } from "../../lib/gradeWeek";
-import {
-  getSeasonStats,
-  getFeaturedStats,
-} from "../../lib/db/stats";
 import SeasonRecord from "../../lib/components/SeasonRecord";
 import BackButton from "@/components/BackButton";
 
@@ -51,23 +47,104 @@ if (week !== currentWeek) {
   await gradeWeek(games);
 }
 
-// Database
-const [
-  savedPicks,
-  stats,
-  featuredStats,
-  featured,
-] = await Promise.all([
+// Database + schedules through the selected week. Records are calculated
+// directly from ESPN final scores so they do not depend on stale result columns.
+const recordWeeks = Array.from({ length: week }, (_, i) => i + 1);
+const [savedPicks, allPicks, featured, recordSchedules, featuredByWeek] = await Promise.all([
   getPicks(week),
-  getSeasonStats(),
-  getFeaturedStats(week),
+  getPicks(),
   getFeaturedPicks(week),
+  Promise.all(recordWeeks.map((w) => w === week ? Promise.resolve(games) : getWeekGames(w))),
+  Promise.all(recordWeeks.map((w) => getFeaturedPicks(w))),
 ]);
 
-const availableWeeks = Array.from(
-  { length: 18 },
-  (_, i) => i + 1
-);
+type RecordRow = { wins: number; losses: number; pushes: number };
+const emptyRecord = (): RecordRow => ({ wins: 0, losses: 0, pushes: 0 });
+const stats = {
+  moneyline: { ...emptyRecord(), total: 0, pct: 0 },
+  ats: { ...emptyRecord(), total: 0, pct: 0 },
+  total: { ...emptyRecord(), total: 0, pct: 0 },
+};
+const featuredStats = {
+  moneyline: emptyRecord(),
+  ats: emptyRecord(),
+  total: emptyRecord(),
+};
+
+const featuredKeys = new Set<string>();
+featuredByWeek.forEach((item: any, index) => {
+  const w = index + 1;
+  if (item.moneyline?.gameid) featuredKeys.add(`${w}:moneyline:${item.moneyline.gameid}`);
+  if (item.ats?.gameid) featuredKeys.add(`${w}:ats:${item.ats.gameid}`);
+  if (item.total?.gameid) featuredKeys.add(`${w}:total:${item.total.gameid}`);
+});
+
+const add = (record: RecordRow, result: "WIN" | "LOSS" | "PUSH") => {
+  if (result === "WIN") record.wins++;
+  else if (result === "LOSS") record.losses++;
+  else record.pushes++;
+};
+
+for (const pick of allPicks as any[]) {
+  const w = Number(pick.week);
+  if (!w || w > week) continue;
+  const game = (recordSchedules[w - 1] ?? []).find((g: any) => String(g.id) === String(pick.gameid));
+  if (!game || game.status?.type?.completed !== true) continue;
+
+  const competition = game.competitions?.[0];
+  const home = competition?.competitors?.find((x: any) => x.homeAway === "home");
+  const away = competition?.competitors?.find((x: any) => x.homeAway === "away");
+  if (!home || !away) continue;
+
+  const homeScore = Number(home.score ?? 0);
+  const awayScore = Number(away.score ?? 0);
+
+  if (pick.moneylinepick && homeScore !== awayScore) {
+    const winner = homeScore > awayScore ? home.team.displayName : away.team.displayName;
+    const result: "WIN" | "LOSS" = winner === pick.moneylinepick ? "WIN" : "LOSS";
+    add(stats.moneyline, result);
+    if (featuredKeys.has(`${w}:moneyline:${pick.gameid}`)) add(featuredStats.moneyline, result);
+  }
+
+  if (pick.atspick && pick.spread !== null && pick.spread !== undefined && pick.spread !== "") {
+    const spread = Number(pick.spread);
+    let picked: number | null = null;
+    let opponent: number | null = null;
+    if (pick.atspick === home.team.displayName) {
+      picked = homeScore + spread;
+      opponent = awayScore;
+    } else if (pick.atspick === away.team.displayName) {
+      picked = awayScore + spread;
+      opponent = homeScore;
+    }
+    if (picked !== null && opponent !== null) {
+      const result: "WIN" | "LOSS" | "PUSH" = picked > opponent ? "WIN" : picked < opponent ? "LOSS" : "PUSH";
+      add(stats.ats, result);
+      if (featuredKeys.has(`${w}:ats:${pick.gameid}`)) add(featuredStats.ats, result);
+    }
+  }
+
+  if (pick.totalpick && pick.totalline !== null && pick.totalline !== undefined && pick.totalline !== "") {
+    const points = homeScore + awayScore;
+    const line = Number(pick.totalline);
+    const selection = String(pick.totalpick).toLowerCase();
+    let result: "WIN" | "LOSS" | "PUSH" = "PUSH";
+    if (selection === "over") result = points > line ? "WIN" : points < line ? "LOSS" : "PUSH";
+    else if (selection === "under") result = points < line ? "WIN" : points > line ? "LOSS" : "PUSH";
+    add(stats.total, result);
+    if (featuredKeys.has(`${w}:total:${pick.gameid}`)) add(featuredStats.total, result);
+  }
+}
+
+for (const key of ["moneyline", "ats", "total"] as const) {
+  const record = stats[key];
+  record.total = record.wins + record.losses + record.pushes;
+  record.pct = record.wins + record.losses
+    ? Math.round((record.wins / (record.wins + record.losses)) * 100)
+    : 0;
+}
+
+const availableWeeks = Array.from({ length: 18 }, (_, i) => i + 1);
 
 
 
