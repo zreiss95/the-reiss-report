@@ -103,6 +103,10 @@ export default async function SurvivorPage({
   const remainingPicks =
     await getSurvivorRemaining(week);
 
+  const selectedTeams = overallPicks
+    .filter((pick: any) => pick.rank === 1 && pick.team)
+    .map((pick: any) => pick.team);
+
 
 
   const availableWeeks =
@@ -430,6 +434,21 @@ export default async function SurvivorPage({
         overallPicks
       )}
 
+
+      <div
+        style={{
+          marginTop: 40,
+          padding: 22,
+          background: "#172036",
+          border: "1px solid #24314f",
+          borderRadius: 18,
+        }}
+      >
+        <h2 style={{ margin: 0, marginBottom: 10, fontSize: 24 }}>Teams Selected</h2>
+        <div style={{ color: "#cbd5e1", fontWeight: 700 }}>
+          {selectedTeams.length ? selectedTeams.join(", ") : "No #1 pick selected yet."}
+        </div>
+      </div>
 
       {renderSection(
         "♻ Remaining Teams Only",
