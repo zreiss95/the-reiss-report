@@ -45,6 +45,12 @@ const games =
     ? currentGames
     : await getWeekGames(week);
 
+// Grade the week being viewed as well. Previously only the hard-coded current
+// week was graded, so featured records on other weekly pages could stay stale.
+if (week !== currentWeek) {
+  await gradeWeek(games);
+}
+
 // Database
 const [
   savedPicks,
