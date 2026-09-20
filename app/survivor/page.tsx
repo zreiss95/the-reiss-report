@@ -126,6 +126,11 @@ export default async function SurvivorPage({
 
 
 
+  const toTitleCase = (value: any) =>
+    String(value ?? "")
+      .toLowerCase()
+      .replace(/\b[a-z]/g, (char) => char.toUpperCase());
+
   function renderSection(
     title:string,
     picks:any[]
@@ -244,7 +249,7 @@ export default async function SurvivorPage({
 
                           <img
                             src={logo}
-                            alt={pick.team}
+                            alt={toTitleCase(pick.team)}
                             style={{
                               width:64,
                               height:64,
@@ -264,7 +269,7 @@ export default async function SurvivorPage({
                             fontWeight:900,
                           }}
                         >
-                          {String(pick.team ?? "").toLowerCase().replace(/\\b\\w/g, (char) => char.toUpperCase())}
+                          {toTitleCase(pick.team)}
                         </div>
 
 
@@ -274,7 +279,7 @@ export default async function SurvivorPage({
                             fontSize:18,
                           }}
                         >
-                          vs {String(pick.opponent ?? "").toLowerCase().replace(/\\b\\w/g, (char) => char.toUpperCase())}
+                          vs {toTitleCase(pick.opponent)}
                         </div>
 
                       </div>
@@ -455,7 +460,7 @@ export default async function SurvivorPage({
       >
         <h2 style={{ margin: 0, marginBottom: 10, fontSize: 24 }}>Teams Selected</h2>
         <div style={{ color: "#cbd5e1", fontWeight: 700 }}>
-          {selectedTeams.length ? selectedTeams.join(", ") : "No #1 pick selected yet."}
+          {selectedTeams.length ? selectedTeams.map(toTitleCase).join(", ") : "No #1 pick selected yet."}
         </div>
       </div>
 
