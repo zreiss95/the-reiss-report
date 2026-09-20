@@ -26,6 +26,10 @@ export default async function SurvivorAdminPage({
   const savedRemaining =
     await getSurvivorRemaining(week);
 
+  const selectedTeams = savedOverall
+    .filter((pick: any) => pick.rank === 1 && pick.team)
+    .map((pick: any) => pick.team);
+
 
   const availableWeeks = Array.from(
     { length: 18 },
@@ -130,6 +134,13 @@ export default async function SurvivorAdminPage({
             games={games}
             saved={savedOverall}
           />
+
+          <div style={{ padding: 20, background: "#111827", border: "1px solid #2b3b60", borderRadius: 16 }}>
+            <h2 style={{ margin: 0, marginBottom: 10 }}>Teams Selected</h2>
+            <div style={{ color: "#cbd5e1", fontWeight: 700 }}>
+              {selectedTeams.length ? selectedTeams.join(", ") : "No #1 pick selected yet."}
+            </div>
+          </div>
 
           <SurvivorPicker
             title="♻ Remaining Teams Only"
