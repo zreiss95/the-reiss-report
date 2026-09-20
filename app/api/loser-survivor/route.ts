@@ -134,19 +134,18 @@ export async function POST(req: NextRequest) {
     }
 
 
-    const {
-      error
-    } =
-      await supabaseAdmin
-        .from("loser_survivor")
-        .upsert(
-          rows,
-          {
-            onConflict:
-              "week,rank",
-          }
-        );
+    const week = rows[0]?.week;
 
+    const { error: deleteError } = await supabaseAdmin
+      .from("loser_survivor")
+      .delete()
+      .eq("week", week);
+
+    if (deleteError) throw deleteError;
+
+    const { error } = await supabaseAdmin
+      .from("loser_survivor")
+      .insert(rows);
 
     if (error) {
       throw error;
