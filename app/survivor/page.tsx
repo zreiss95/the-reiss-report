@@ -126,6 +126,11 @@ export default async function SurvivorPage({
 
 
 
+  const confidence10 = (value: any) => {
+    const numeric = Number(value) || 0;
+    return numeric > 10 ? Math.floor(numeric) / 10 : numeric;
+  };
+
   const toTitleCase = (value: any) =>
     String(value ?? "")
       .toLowerCase()
@@ -200,11 +205,16 @@ export default async function SurvivorPage({
                     : "#eab308";
 
 
+                const displayedConfidence = confidence10(pick.confidence);
                 const confidenceColor =
-                  pick.confidence >= 90
+                  displayedConfidence >= 9
+                    ? "#16a34a"
+                    : displayedConfidence >= 7
                     ? "#22c55e"
-                    : pick.confidence >= 80
+                    : displayedConfidence >= 5
                     ? "#eab308"
+                    : displayedConfidence >= 3
+                    ? "#f97316"
                     : "#ef4444";
 
 
@@ -299,7 +309,7 @@ export default async function SurvivorPage({
                         fontWeight:700,
                       }}
                     >
-                      {pick.confidence}% Confidence
+                      {displayedConfidence}/10 Confidence
                     </div>
 
 
