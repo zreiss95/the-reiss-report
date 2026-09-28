@@ -14,7 +14,7 @@ const [selectedGameId, setSelectedGameId] = useState("");
 const [moneylinePick, setMoneylinePick] = useState("");
 const [atsPick, setAtsPick] = useState("");
 const [spread, setSpread] = useState("");
-const [confidence, setConfidence] = useState(90);
+const [confidence, setConfidence] = useState(9);
 const [analysis, setAnalysis] = useState("");
 const [totalLine, setTotalLine] = useState("");
 const [totalPick, setTotalPick] = useState("");
@@ -231,7 +231,7 @@ const handleSave = async () => {
         );
 
         setConfidence(
-          existing.confidence || 90
+          existing.confidence > 10 ? Math.max(1, Math.min(10, Math.round(existing.confidence / 10))) : (existing.confidence || 9)
         );
 
         setAnalysis(
@@ -261,7 +261,7 @@ const handleSave = async () => {
         setMoneylinePick("");
         setAtsPick("");
         setSpread("");
-        setConfidence(90);
+        setConfidence(9);
         setAnalysis("");
         setTotalLine("");
         setTotalPick("");
@@ -616,51 +616,43 @@ const handleSave = async () => {
     }}
   >
     <span>Confidence</span>
-    <span>{confidence}%</span>
+    <span>{confidence}/10</span>
   </div>
-
-  <input
-    type="range"
-    min={50}
-    max={100}
-    value={confidence}
-    onChange={(e) =>
-      setConfidence(Number(e.target.value))
-    }
-    style={{
-      width: "100%",
-      cursor: "pointer",
-    }}
-  />
 
   <div
     style={{
-      marginTop: 12,
-      height: 12,
-      borderRadius: 999,
-      overflow: "hidden",
-      background: "#0f172a",
+      display: "grid",
+      gridTemplateColumns: "repeat(10, minmax(0, 1fr))",
+      gap: 6,
     }}
   >
-    <div
-      style={{
-        width: `${confidence}%`,
-        height: "100%",
-        borderRadius: 999,
-        transition: ".2s",
+    {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => {
+      const color =
+        value <= 2 ? "#ef4444" :
+        value <= 4 ? "#f97316" :
+        value <= 6 ? "#eab308" :
+        value <= 8 ? "#22c55e" : "#16a34a";
+      const selected = confidence === value;
 
-        background:
-          confidence < 60
-            ? "#ef4444"
-            : confidence < 70
-            ? "#f97316"
-            : confidence < 80
-            ? "#eab308"
-            : confidence < 90
-            ? "#22c55e"
-            : "#16a34a",
-      }}
-    />
+      return (
+        <button
+          key={value}
+          type="button"
+          onClick={() => setConfidence(value)}
+          style={{
+            padding: "11px 0",
+            borderRadius: 8,
+            border: selected ? `2px solid ${color}` : "1px solid #334155",
+            background: selected ? color : "#0f172a",
+            color: "white",
+            cursor: "pointer",
+            fontWeight: 800,
+          }}
+        >
+          {value}
+        </button>
+      );
+    })}
   </div>
 </div>
 
