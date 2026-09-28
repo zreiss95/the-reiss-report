@@ -49,6 +49,10 @@ export default function PickCard({
   awayScore,
 }: PickCardProps) {
   const [expanded, setExpanded] = useState(false);
+  // Legacy confidence values were stored on a 50-100 scale. Display them on
+  // the new 1-10 scale, truncating to one decimal place (e.g. 65 -> 6.5).
+  const confidence10 =
+    confidence > 10 ? Math.floor(confidence) / 10 : confidence;
 
   return (
     <div
@@ -291,17 +295,17 @@ export default function PickCard({
             >
               <div
                 style={{
-                  width: `${Math.max(0, Math.min(10, confidence)) * 10}%`,
+                  width: `${Math.max(0, Math.min(10, confidence10)) * 10}%`,
                   height: "100%",
                   transition: ".25s",
                   background:
-                    confidence <= 2
+                    confidence10 <= 2
                       ? "#ef4444"
-                      : confidence <= 4
+                      : confidence10 <= 4
                       ? "#f97316"
-                      : confidence <= 6
+                      : confidence10 <= 6
                       ? "#eab308"
-                      : confidence <= 8
+                      : confidence10 <= 8
                       ? "#22c55e"
                       : "#16a34a",
                 }}
@@ -317,7 +321,7 @@ export default function PickCard({
                 fontSize: 14,
               }}
             >
-              {confidence}/10 Confidence
+              {confidence10}/10 Confidence
             </div>
           </div>
 
