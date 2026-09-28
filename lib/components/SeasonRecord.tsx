@@ -13,6 +13,13 @@ type Props = {
       total: number;
       pct: number;
     };
+    total: {
+      wins: number;
+      losses: number;
+      pushes: number;
+      total: number;
+      pct: number;
+    };
   };
 };
 
@@ -132,6 +139,59 @@ export default function SeasonRecord({ stats }: Props) {
         </div>
 
         
+      </div>
+
+      {/* Divider */}
+      <div
+        style={{
+          width: 1,
+          alignSelf: "stretch",
+          background: "#24314f",
+          margin: "0 24px",
+        }}
+      />
+
+      {/* Over / Under */}
+      <div style={{ flex: 1 }}>
+        <div
+          style={{
+            color: "#94a3b8",
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: 1,
+            marginBottom: 10,
+            textTransform: "uppercase",
+          }}
+        >
+          O/U Record
+        </div>
+
+        <div
+          style={{
+            color: "#fbbf24",
+            fontSize: 40,
+            fontWeight: 900,
+            lineHeight: 1,
+          }}
+        >
+          {stats.total.wins}-{stats.total.losses}
+          {stats.total.pushes ? `-${stats.total.pushes}` : ""}
+        </div>
+
+        <div
+          style={{
+            display: "inline-block",
+            marginTop: 12,
+            padding: "6px 14px",
+            borderRadius: 999,
+            background: "#453515",
+            color: "#fbbf24",
+            fontWeight: 700,
+            fontSize: 14,
+          }}
+        >
+          {stats.total.pct}%
+        </div>
       </div>
     </div>
   );
