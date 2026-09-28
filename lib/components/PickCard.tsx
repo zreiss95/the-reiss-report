@@ -291,17 +291,17 @@ export default function PickCard({
             >
               <div
                 style={{
-                  width: `${confidence}%`,
+                  width: `${Math.max(0, Math.min(10, confidence)) * 10}%`,
                   height: "100%",
                   transition: ".25s",
                   background:
-                    confidence < 60
+                    confidence <= 2
                       ? "#ef4444"
-                      : confidence < 70
+                      : confidence <= 4
                       ? "#f97316"
-                      : confidence < 80
+                      : confidence <= 6
                       ? "#eab308"
-                      : confidence < 90
+                      : confidence <= 8
                       ? "#22c55e"
                       : "#16a34a",
                 }}
@@ -317,7 +317,7 @@ export default function PickCard({
                 fontSize: 14,
               }}
             >
-              {confidence}% Confidence
+              {confidence}/10 Confidence
             </div>
           </div>
 
