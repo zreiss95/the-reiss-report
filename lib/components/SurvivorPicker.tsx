@@ -24,7 +24,7 @@ export default function SurvivorPicker({
       away: "",
       team: "",
       opponent: "",
-      confidence: 95,
+      confidence: 10,
       analysis: "",
       kickoff: "",
       status: "Draft",
@@ -36,7 +36,7 @@ export default function SurvivorPicker({
       away: "",
       team: "",
       opponent: "",
-      confidence: 90,
+      confidence: 9,
       analysis: "",
       kickoff: "",
       status: "Draft",
@@ -48,7 +48,7 @@ export default function SurvivorPicker({
       away: "",
       team: "",
       opponent: "",
-      confidence: 85,
+      confidence: 8,
       analysis: "",
       kickoff: "",
       status: "Draft",
@@ -344,35 +344,47 @@ return (
     gap: 10,
   }}
 >
-  <input
-    type="range"
-    min={50}
-    max={100}
-    step={1}
-    value={slot.confidence}
-    onChange={(e) =>
-      setSlots((prev) =>
-        prev.map((s) =>
-          s.rank === slot.rank
-            ? {
-                ...s,
-                confidence: Number(e.target.value),
-              }
-            : s
-        )
-      )
-    }
+  <div
     style={{
-      width: "100%",
-      accentColor:
-        slot.confidence >= 90
-          ? "#22c55e"
-          : slot.confidence >= 80
-          ? "#eab308"
-          : "#ef4444",
-      cursor: "pointer",
+      display: "grid",
+      gridTemplateColumns: "repeat(10, minmax(0, 1fr))",
+      gap: 6,
     }}
-  />
+  >
+    {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => {
+      const color =
+        value <= 2 ? "#ef4444" :
+        value <= 4 ? "#f97316" :
+        value <= 6 ? "#eab308" :
+        value <= 8 ? "#22c55e" : "#16a34a";
+      const selected = Number(slot.confidence) === value;
+
+      return (
+        <button
+          key={value}
+          type="button"
+          onClick={() =>
+            setSlots((prev) =>
+              prev.map((s) =>
+                s.rank === slot.rank ? { ...s, confidence: value } : s
+              )
+            )
+          }
+          style={{
+            padding: "10px 0",
+            borderRadius: 8,
+            border: selected ? `2px solid ${color}` : "1px solid #334155",
+            background: selected ? color : "#111827",
+            color: "white",
+            fontWeight: 800,
+            cursor: "pointer",
+          }}
+        >
+          {value}
+        </button>
+      );
+    })}
+  </div>
 
   <div
     style={{
@@ -380,14 +392,13 @@ return (
       fontSize: 20,
       fontWeight: 700,
       color:
-        slot.confidence >= 90
-          ? "#22c55e"
-          : slot.confidence >= 80
-          ? "#eab308"
-          : "#ef4444",
+        Number(slot.confidence) <= 2 ? "#ef4444" :
+        Number(slot.confidence) <= 4 ? "#f97316" :
+        Number(slot.confidence) <= 6 ? "#eab308" :
+        Number(slot.confidence) <= 8 ? "#22c55e" : "#16a34a",
     }}
   >
-    {slot.confidence}% Confidence
+    {slot.confidence}/10 Confidence
   </div>
 </div>
 
