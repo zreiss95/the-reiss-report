@@ -33,6 +33,7 @@ export default async function HomePage() {
 
   const moneyline = emptyRecord();
   const ats = emptyRecord();
+  const totals = emptyRecord();
   const bestBets = emptyRecord();
 
   for (const pick of picks as any[]) {
@@ -75,6 +76,7 @@ export default async function HomePage() {
       let result: "WIN" | "LOSS" | "PUSH" = "PUSH";
       if (selection === "over") result = points > line ? "WIN" : points < line ? "LOSS" : "PUSH";
       else if (selection === "under") result = points < line ? "WIN" : points > line ? "LOSS" : "PUSH";
+      addResult(totals, result);
       if (featuredKeys.has(`${week}:total:${pick.gameid}`)) addResult(bestBets, result);
     }
   }
@@ -122,6 +124,7 @@ export default async function HomePage() {
   const stats = [
     ["ML Record", `${moneyline.wins}-${moneyline.losses}`],
     ["ATS Record", `${ats.wins}-${ats.losses}${ats.pushes ? `-${ats.pushes}` : ""}`],
+    ["O/U Record", `${totals.wins}-${totals.losses}${totals.pushes ? `-${totals.pushes}` : ""}`],
     ["Best Bets", `${bestBets.wins}-${bestBets.losses}${bestBets.pushes ? `-${bestBets.pushes}` : ""}`],
     ["#1 Survivor", `${survivorWins}-${survivorLosses}`],
     ["#1 Loser Survivor", `${loserSurvivorWins}-${loserSurvivorLosses}`],
@@ -129,7 +132,7 @@ export default async function HomePage() {
 
   return (
     <main className="home-page">
-      <style>{`@media (min-width: 901px) { .home-grid-stats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; } .home-grid-stats .home-stat-card { padding: 20px 16px; min-width: 0; } .home-grid-stats .home-stat-title { white-space: nowrap; font-size: 13px; } .home-grid-stats .home-stat-value { font-size: 32px; } }`}</style>
+      <style>{`@media (min-width: 901px) { .home-grid-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } .home-grid-stats .home-stat-card { padding: 20px 16px; min-width: 0; } .home-grid-stats .home-stat-title { white-space: nowrap; font-size: 13px; } .home-grid-stats .home-stat-value { font-size: 32px; } }`}</style>
       <div className="home-watermark" aria-hidden="true"><img src="/logos/colts-logo.png" alt="" /></div>
       <section className="home-hero"><div className="home-hero-tint" aria-hidden="true" /><div className="home-hero-content">
         <h1>The Reiss Report</h1><p>NFL Picks • Survivor • Best Bets • Rankings • Fantasy</p>
