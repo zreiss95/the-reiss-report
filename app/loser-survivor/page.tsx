@@ -123,6 +123,11 @@ export default async function SurvivorPage({
     );
 
 
+  const confidence10 = (value: any) => {
+    const numeric = Number(value) || 0;
+    return numeric > 10 ? Math.floor(numeric) / 10 : numeric;
+  };
+
   const toTitleCase = (value: any) =>
     String(value ?? "")
       .toLowerCase()
@@ -281,7 +286,7 @@ export default async function SurvivorPage({
                       fontWeight: 700,
                     }}
                   >
-                    {pick.confidence}% Confidence
+                    {displayedConfidence}/10 Confidence
                   </div>
 
 
