@@ -61,27 +61,16 @@ export default async function SurvivorPage({
         const names = [
           team.displayName,
           team.shortDisplayName,
+          team.name,
+          team.nickname,
           team.abbreviation,
         ]
           .filter(Boolean)
-          .map((x:string)=>
-            x.toLowerCase().trim()
-          );
+          .map((x: string) => x.toLowerCase().trim());
 
-
-        if (
-          names.includes(normalized)
-        ) {
-          return team.logo ?? "";
-        }
-
-
-        if (
-          names.some((name:string)=>
-            name.includes(normalized) ||
-            normalized.includes(name)
-          )
-        ) {
+        // Exact aliases only. The old substring fallback could match a short
+        // fragment to the wrong NFL team and display an unrelated logo.
+        if (names.includes(normalized)) {
           return team.logo ?? "";
         }
 
