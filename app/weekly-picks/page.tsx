@@ -17,7 +17,7 @@ export default async function WeeklyPicks({
   searchParams: { week?: string };
 }) {
   const currentGames = await getWeekGames();
-  const currentWeek = currentGames[0]?.week?.number ?? 1;
+  const currentWeek = currentGames[0]?.week?.number ?? 6;
 
   await gradeWeek(currentGames);
 
