@@ -2,27 +2,71 @@ import { getWeekGames } from "../../../lib/api/getWeekGames";
 import { getPicks } from "../../../lib/db/picks";
 import AdminEditor from "../../../lib/components/AdminEditor";
 
+
+
 export default async function WeeklyPicksAdmin({
   searchParams,
 }: {
-  searchParams: { week?: string };
+  searchParams: {
+    week?: string;
+  };
 }) {
-  const currentGames = await getWeekGames();
-  // NFL Week 6 is the live week on October 16, 2026; use ESPN's live feed
-  // whenever it provides a week number, with Week 6 as the safe fallback.
-  const currentWeek = currentGames[0]?.week?.number ?? 6;
-  const selectedWeek = Number(searchParams.week) || currentWeek;
 
-  const games = await getWeekGames(selectedWeek);
-  const existingPicks = await getPicks(selectedWeek);
+
+  const selectedWeek =
+    Number(searchParams.week) || 1;
+
+
+  const games =
+    await getWeekGames(selectedWeek);
+
+
+  const existingPicks =
+    await getPicks(selectedWeek);
+
+
 
   return (
-    <main style={{ maxWidth: 900, margin: "40px auto", padding: 20, color: "white" }}>
-      <h1 style={{ fontSize: 48, marginBottom: 10 }}>Weekly Picks Admin</h1>
-      <p style={{ color: "#94a3b8", marginBottom: 25 }}>Manage picks for Week {selectedWeek}</p>
+    <main
+      style={{
+        maxWidth: 900,
+        margin: "40px auto",
+        padding: 20,
+        color: "white",
+      }}
+    >
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 30 }}>
+      <h1
+        style={{
+          fontSize: 48,
+          marginBottom: 10,
+        }}
+      >
+        Weekly Picks Admin
+      </h1>
+
+
+      <p
+        style={{
+          color: "#94a3b8",
+          marginBottom: 25,
+        }}
+      >
+        Manage picks for Week {selectedWeek}
+      </p>
+
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 30,
+        }}
+      >
+
         {Array.from({ length: 18 }, (_, i) => i + 1).map((week) => (
+
           <a
             key={week}
             href={`/admin/weekly-picks?week=${week}`}
@@ -30,7 +74,10 @@ export default async function WeeklyPicksAdmin({
               padding: "8px 16px",
               borderRadius: 999,
               textDecoration: "none",
-              background: week === selectedWeek ? "#2563eb" : "#1e293b",
+              background:
+                week === selectedWeek
+                  ? "#2563eb"
+                  : "#1e293b",
               color: "white",
               fontWeight: 700,
               transition: ".2s",
@@ -38,12 +85,28 @@ export default async function WeeklyPicksAdmin({
           >
             Week {week}
           </a>
+
         ))}
+
       </div>
 
-      <div style={{ background: "#172036", border: "1px solid #24314f", borderRadius: 18, padding: 30 }}>
-        <AdminEditor games={games} existingPicks={existingPicks} />
+
+      <div
+        style={{
+          background: "#172036",
+          border: "1px solid #24314f",
+          borderRadius: 18,
+          padding: 30,
+        }}
+      >
+
+        <AdminEditor
+          games={games}
+          existingPicks={existingPicks}
+        />
+
       </div>
+
     </main>
   );
 }

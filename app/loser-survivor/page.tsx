@@ -1,35 +1,449 @@
 import { getWeekGames } from "../../lib/api/getWeekGames";
-import { getLoserSurvivor, getLoserSurvivorRemaining } from "../../lib/db/loserSurvivor";
+import {
+  getLoserSurvivor,
+  getLoserSurvivorRemaining,
+} from "../../lib/db/loserSurvivor";
 import BackButton from "@/components/BackButton";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function SurvivorPage({ searchParams }: { searchParams: { week?: string } }) {
-  const currentGames = await getWeekGames();
-  const currentWeek = currentGames[0]?.week?.number ?? 1;
-  const week = Number(searchParams.week) || currentWeek;
-  const games = await getWeekGames(week);
+export default async function SurvivorPage({
+  searchParams,
+}: {
+  searchParams: {
+    week?: string;
+  };
+}) {
+  const currentWeek = 1;
+
+  const currentGames = await getWeekGames(currentWeek);
+
+  const week =
+    Number(searchParams.week) || currentWeek;
+
+  const games =
+    week === currentWeek
+      ? currentGames
+      : await getWeekGames(week);
+
+
   function getTeamLogo(teamName: string) {
     if (!teamName) return "";
-    const normalized = teamName.toLowerCase().trim();
+
+    const normalized =
+      teamName
+        .toLowerCase()
+        .trim();
+
+
     for (const game of games) {
-      const competition = game.competitions?.[0]; if (!competition) continue;
-      for (const team of competition.competitors ?? []) {
-        const names = [team.team.displayName, team.team.shortDisplayName, team.team.name, team.team.nickname, team.team.abbreviation].filter(Boolean).map((x: string) => x.toLowerCase().trim());
-        if (names.includes(normalized)) return team.team.logo ?? "";
+
+      const competition =
+        game.competitions?.[0];
+
+      if (!competition) continue;
+
+
+      const teams =
+        competition.competitors ?? [];
+
+
+      for (const team of teams) {
+
+        const display =
+          team.team.displayName
+            ?.toLowerCase()
+            .trim();
+
+
+        const short =
+          team.team.shortDisplayName
+            ?.toLowerCase()
+            .trim();
+
+
+        const abbreviation =
+          team.team.abbreviation
+            ?.toLowerCase()
+            .trim();
+
+
+        if (
+          normalized === display ||
+          normalized === short ||
+          normalized === abbreviation
+        ) {
+          return team.team.logo ?? "";
+        }
+
+
+        if (
+          display &&
+          (
+            display.includes(normalized) ||
+            normalized.includes(display)
+          )
+        ) {
+          return team.team.logo ?? "";
+        }
+
       }
+
     }
+
     return "";
   }
-  const overallPicks = await getLoserSurvivor(week);
-  const remainingPicks = await getLoserSurvivorRemaining(week);
-  const previousWeekPicks = week > 1 ? (await Promise.all(Array.from({ length: week - 1 }, (_, index) => getLoserSurvivor(index + 1)))).flat() : [];
-  const selectedTeams = previousWeekPicks.filter((pick: any) => Number(pick.rank) === 1 && pick.team).sort((a: any, b: any) => Number(a.week) - Number(b.week)).map((pick: any) => pick.team);
-  const availableWeeks = Array.from({ length: 18 }, (_, i) => i + 1);
-  const confidence10 = (value: any) => { const numeric = Number(value) || 0; return numeric > 10 ? Math.floor(numeric) / 10 : numeric; };
-  const toTitleCase = (value: any) => String(value ?? "").toLowerCase().replace(/\b[a-z]/g, (char) => char.toUpperCase());
-  function renderSection(title: string, picks: any[]) {
-    return <><h2 style={{ fontSize: 30, fontWeight: 800, marginTop: 40, marginBottom: 24 }}>{title}</h2>{picks.length === 0 ? <div style={{ background: "#172036", border: "1px solid #24314f", borderRadius: 18, padding: 30, textAlign: "center", color: "#94a3b8" }}>No picks published yet.</div> : <div style={{ display: "grid", gap: 24 }}>{picks.map((pick: any) => { const heading = pick.rank === 1 ? "💀 Best Fade" : pick.rank === 2 ? "☠️ 2nd Best Fade" : "⚠️ Backup Fade"; const headingColor = pick.rank === 1 ? "#ef4444" : pick.rank === 2 ? "#f97316" : "#eab308"; const displayedConfidence = confidence10(pick.confidence); const confidenceColor = displayedConfidence >= 9 ? "#16a34a" : displayedConfidence >= 7 ? "#22c55e" : displayedConfidence >= 5 ? "#eab308" : displayedConfidence >= 3 ? "#f97316" : "#ef4444"; return <div key={pick.rank} style={{ background: "linear-gradient(145deg,#172036,#111827)", border: "1px solid #2b3b60", borderRadius: 22, padding: 30, boxShadow: "0 18px 40px rgba(0,0,0,.35)" }}><div style={{ color: headingColor, fontWeight: 800, fontSize: 18, marginBottom: 18 }}>{heading}</div><div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 14 }}>{getTeamLogo(pick.team) && <img src={getTeamLogo(pick.team)} alt={toTitleCase(pick.team)} style={{ width: 64, height: 64, objectFit: "contain" }} />}<div><div style={{ fontSize: 32, fontWeight: 900, lineHeight: 1.1 }}>{toTitleCase(pick.team)}</div><div style={{ color: "#94a3b8", marginTop: 4, fontSize: 18 }}>vs {toTitleCase(pick.opponent)}</div></div></div><div style={{ display: "inline-block", marginTop: 18, padding: "8px 16px", borderRadius: 999, background: confidenceColor, color: "white", fontWeight: 700 }}>{displayedConfidence}/10 Confidence</div><div style={{ marginTop: 22, padding: 20, background: "#111827", border: "1px solid #24314f", borderRadius: 14, color: "#d1d5db", lineHeight: 1.7 }}>{pick.analysis}</div><div style={{ marginTop: 18, color: "#94a3b8", fontSize: 14, fontWeight: 600, textAlign: "right" }}>Kickoff • {pick.kickoff ? new Date(pick.kickoff).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}</div></div>; })}</div>}</>;
+
+
+  const overallPicks =
+    await getLoserSurvivor(week);
+
+
+  const remainingPicks =
+    await getLoserSurvivorRemaining(week);
+
+  // Teams Selected should represent teams already used before the week being
+  // viewed, not the current week's #1 pick.
+  const previousWeekPicks = week > 1
+    ? (await Promise.all(
+        Array.from({ length: week - 1 }, (_, index) => getLoserSurvivor(index + 1))
+      )).flat()
+    : [];
+
+  const selectedTeams = previousWeekPicks
+    .filter((pick: any) => Number(pick.rank) === 1 && pick.team)
+    .sort((a: any, b: any) => Number(a.week) - Number(b.week))
+    .map((pick: any) => pick.team);
+
+
+  const availableWeeks =
+    Array.from(
+      { length: 18 },
+      (_, i) => i + 1
+    );
+
+
+  const confidence10 = (value: any) => {
+    const numeric = Number(value) || 0;
+    return numeric > 10 ? Math.floor(numeric) / 10 : numeric;
+  };
+
+  const toTitleCase = (value: any) =>
+    String(value ?? "")
+      .toLowerCase()
+      .replace(/\b[a-z]/g, (char) => char.toUpperCase());
+
+  function renderSection(
+    title: string,
+    picks: any[]
+  ) {
+    return (
+      <>
+        <h2
+          style={{
+            fontSize: 30,
+            fontWeight: 800,
+            marginTop: 40,
+            marginBottom: 24,
+          }}
+        >
+          {title}
+        </h2>
+
+
+        {picks.length === 0 ? (
+          <div
+            style={{
+              background: "#172036",
+              border: "1px solid #24314f",
+              borderRadius: 18,
+              padding: 30,
+              textAlign: "center",
+              color: "#94a3b8",
+            }}
+          >
+            No picks published yet.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gap: 24,
+            }}
+          >
+
+            {picks.map((pick: any) => {
+
+              const heading =
+                pick.rank === 1
+                  ? "💀 Best Fade"
+                  : pick.rank === 2
+                  ? "☠️ 2nd Best Fade"
+                  : "⚠️ Backup Fade";
+
+
+              const headingColor =
+                pick.rank === 1
+                  ? "#ef4444"
+                  : pick.rank === 2
+                  ? "#f97316"
+                  : "#eab308";
+
+
+              const displayedConfidence = confidence10(pick.confidence);
+              const confidenceColor =
+                displayedConfidence >= 9
+                  ? "#16a34a"
+                  : displayedConfidence >= 7
+                  ? "#22c55e"
+                  : displayedConfidence >= 5
+                  ? "#eab308"
+                  : displayedConfidence >= 3
+                  ? "#f97316"
+                  : "#ef4444";
+
+
+              return (
+                <div
+                  key={pick.rank}
+                  style={{
+                    background:
+                      "linear-gradient(145deg,#172036,#111827)",
+                    border:
+                      "1px solid #2b3b60",
+                    borderRadius: 22,
+                    padding: 30,
+                    boxShadow:
+                      "0 18px 40px rgba(0,0,0,.35)",
+                  }}
+                >
+
+                  <div
+                    style={{
+                      color: headingColor,
+                      fontWeight: 800,
+                      fontSize: 18,
+                      marginBottom: 18,
+                    }}
+                  >
+                    {heading}
+                  </div>
+
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 20,
+                      marginBottom: 14,
+                    }}
+                  >
+
+                    {getTeamLogo(pick.team) && (
+                      <img
+                        src={getTeamLogo(pick.team)}
+                        alt={toTitleCase(pick.team)}
+                        style={{
+                          width: 64,
+                          height: 64,
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
+
+
+                    <div>
+
+                      <div
+                        style={{
+                          fontSize: 32,
+                          fontWeight: 900,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {toTitleCase(pick.team)}
+                      </div>
+
+
+                      <div
+                        style={{
+                          color: "#94a3b8",
+                          marginTop: 4,
+                          fontSize: 18,
+                        }}
+                      >
+                        vs {toTitleCase(pick.opponent)}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    style={{
+                      display: "inline-block",
+                      marginTop: 18,
+                      padding: "8px 16px",
+                      borderRadius: 999,
+                      background: confidenceColor,
+                      color: "white",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {displayedConfidence}/10 Confidence
+                  </div>
+
+
+                  <div
+                    style={{
+                      marginTop: 22,
+                      padding: 20,
+                      background: "#111827",
+                      border:
+                        "1px solid #24314f",
+                      borderRadius: 14,
+                      color: "#d1d5db",
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    {pick.analysis}
+                  </div>
+
+
+                  <div
+                    style={{
+                      marginTop: 18,
+                      color: "#94a3b8",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      textAlign: "right",
+                    }}
+                  >
+                    Kickoff •{" "}
+                    {pick.kickoff
+                      ? new Date(
+                          pick.kickoff
+                        ).toLocaleString(
+                          "en-US",
+                          {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          }
+                        )
+                      : ""}
+                  </div>
+
+
+                </div>
+              );
+            })}
+
+          </div>
+        )}
+
+      </>
+    );
   }
-  return <main style={{ maxWidth: 1000, margin: "40px auto", padding: 20, color: "white" }}><div style={{ marginBottom: 20 }}><BackButton /></div><h1 style={{ fontSize: 48, fontWeight: 800, marginBottom: 8 }}>💀 Loser Survivor Picks</h1><div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 25 }}>{availableWeeks.map((w: number) => <a key={w} href={`/loser-survivor?week=${w}`} style={{ padding: "8px 16px", borderRadius: 999, textDecoration: "none", background: week === w ? "#dc2626" : "#1e293b", color: "white", fontWeight: 700 }}>Week {w}</a>)}</div><p style={{ color: "#94a3b8", fontSize: 18, marginBottom: 40 }}>NFL Week {week}</p>{renderSection("💀 Best Picks (Regardless of Week)", overallPicks)}<div style={{ marginTop: 40, padding: 22, background: "#172036", border: "1px solid #24314f", borderRadius: 18 }}><h2 style={{ margin: 0, marginBottom: 10, fontSize: 24 }}>Teams Selected</h2><div style={{ color: "#cbd5e1", fontWeight: 700 }}>{selectedTeams.length ? selectedTeams.map(toTitleCase).join(", ") : "No #1 pick selected yet."}</div></div>{renderSection("♻ Remaining Teams Only", remainingPicks)}</main>;
+
+
+    return (
+    <main
+      style={{
+        maxWidth: 1000,
+        margin: "40px auto",
+        padding: 20,
+        color: "white",
+      }}
+    >
+
+      <div style={{ marginBottom: 20 }}>
+        <BackButton />
+      </div>
+
+      <h1
+        style={{
+          fontSize: 48,
+          fontWeight: 800,
+          marginBottom: 8,
+        }}
+      >
+        💀 Loser Survivor Picks
+      </h1>
+
+
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+          marginBottom: 25,
+        }}
+      >
+
+        {availableWeeks.map((w: number) => (
+          <a
+            key={w}
+            href={`/loser-survivor?week=${w}`}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 999,
+              textDecoration: "none",
+              background:
+                week === w
+                  ? "#dc2626"
+                  : "#1e293b",
+              color: "white",
+              fontWeight: 700,
+            }}
+          >
+            Week {w}
+          </a>
+        ))}
+
+      </div>
+
+
+      <p
+        style={{
+          color: "#94a3b8",
+          fontSize: 18,
+          marginBottom: 40,
+        }}
+      >
+        NFL Week {week}
+      </p>
+
+
+      {renderSection(
+        "💀 Best Picks (Regardless of Week)",
+        overallPicks
+      )}
+
+
+      <div
+        style={{
+          marginTop: 40,
+          padding: 22,
+          background: "#172036",
+          border: "1px solid #24314f",
+          borderRadius: 18,
+        }}
+      >
+        <h2 style={{ margin: 0, marginBottom: 10, fontSize: 24 }}>Teams Selected</h2>
+        <div style={{ color: "#cbd5e1", fontWeight: 700 }}>
+          {selectedTeams.length ? selectedTeams.map(toTitleCase).join(", ") : "No #1 pick selected yet."}
+        </div>
+      </div>
+
+      {renderSection(
+        "♻ Remaining Teams Only",
+        remainingPicks
+      )}
+
+    </main>
+  );
 }
