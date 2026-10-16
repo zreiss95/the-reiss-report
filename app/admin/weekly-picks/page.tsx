@@ -2,8 +2,6 @@ import { getWeekGames } from "../../../lib/api/getWeekGames";
 import { getPicks } from "../../../lib/db/picks";
 import AdminEditor from "../../../lib/components/AdminEditor";
 
-
-
 export default async function WeeklyPicksAdmin({
   searchParams,
 }: {
@@ -11,20 +9,12 @@ export default async function WeeklyPicksAdmin({
     week?: string;
   };
 }) {
+  const currentGames = await getWeekGames();
+  const currentWeek = currentGames[0]?.week?.number ?? 1;
+  const selectedWeek = Number(searchParams.week) || currentWeek;
 
-
-  const selectedWeek =
-    Number(searchParams.week) || 1;
-
-
-  const games =
-    await getWeekGames(selectedWeek);
-
-
-  const existingPicks =
-    await getPicks(selectedWeek);
-
-
+  const games = await getWeekGames(selectedWeek);
+  const existingPicks = await getPicks(selectedWeek);
 
   return (
     <main
@@ -35,38 +25,13 @@ export default async function WeeklyPicksAdmin({
         color: "white",
       }}
     >
-
-      <h1
-        style={{
-          fontSize: 48,
-          marginBottom: 10,
-        }}
-      >
-        Weekly Picks Admin
-      </h1>
-
-
-      <p
-        style={{
-          color: "#94a3b8",
-          marginBottom: 25,
-        }}
-      >
+      <h1 style={{ fontSize: 48, marginBottom: 10 }}>Weekly Picks Admin</h1>
+      <p style={{ color: "#94a3b8", marginBottom: 25 }}>
         Manage picks for Week {selectedWeek}
       </p>
 
-
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 10,
-          marginBottom: 30,
-        }}
-      >
-
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 30 }}>
         {Array.from({ length: 18 }, (_, i) => i + 1).map((week) => (
-
           <a
             key={week}
             href={`/admin/weekly-picks?week=${week}`}
@@ -74,10 +39,7 @@ export default async function WeeklyPicksAdmin({
               padding: "8px 16px",
               borderRadius: 999,
               textDecoration: "none",
-              background:
-                week === selectedWeek
-                  ? "#2563eb"
-                  : "#1e293b",
+              background: week === selectedWeek ? "#2563eb" : "#1e293b",
               color: "white",
               fontWeight: 700,
               transition: ".2s",
@@ -85,28 +47,12 @@ export default async function WeeklyPicksAdmin({
           >
             Week {week}
           </a>
-
         ))}
-
       </div>
 
-
-      <div
-        style={{
-          background: "#172036",
-          border: "1px solid #24314f",
-          borderRadius: 18,
-          padding: 30,
-        }}
-      >
-
-        <AdminEditor
-          games={games}
-          existingPicks={existingPicks}
-        />
-
+      <div style={{ background: "#172036", border: "1px solid #24314f", borderRadius: 18, padding: 30 }}>
+        <AdminEditor games={games} existingPicks={existingPicks} />
       </div>
-
     </main>
   );
 }
