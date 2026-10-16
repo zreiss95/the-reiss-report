@@ -1,21 +1,24 @@
 import axios from "axios";
 
+function formatDate(date: Date) {
+  return date.toISOString().slice(0, 10).replace(/-/g, "");
+}
+
 export async function getWeekGames(
   week?: number,
   season: number = 2026
 ) {
-  // ESPN's bare scoreboard endpoint is the authoritative "current NFL week"
-  // feed. Using `dates=2026` here can return no events on days without a game,
-  // which makes pages incorrectly fall back to Week 1.
   const url = week
     ? `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&week=${week}&season=${season}`
-    : `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&season=${season}`;
+    : (() => {
+        const start = new Date();
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+        return `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?seasontype=2&dates=${formatDate(start)}-${formatDate(end)}`;
+      })();
 
   try {
-    const response = await axios.get(url, {
-      timeout: 10000,
-    });
-
+    const response = await axios.get(url, { timeout: 10000 });
     return response.data.events ?? [];
   } catch (err) {
     return [];
