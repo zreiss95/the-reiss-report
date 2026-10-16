@@ -5,30 +5,21 @@ import AdminEditor from "../../../lib/components/AdminEditor";
 export default async function WeeklyPicksAdmin({
   searchParams,
 }: {
-  searchParams: {
-    week?: string;
-  };
+  searchParams: { week?: string };
 }) {
   const currentGames = await getWeekGames();
-  const currentWeek = currentGames[0]?.week?.number ?? 1;
+  // NFL Week 6 is the live week on October 16, 2026; use ESPN's live feed
+  // whenever it provides a week number, with Week 6 as the safe fallback.
+  const currentWeek = currentGames[0]?.week?.number ?? 6;
   const selectedWeek = Number(searchParams.week) || currentWeek;
 
   const games = await getWeekGames(selectedWeek);
   const existingPicks = await getPicks(selectedWeek);
 
   return (
-    <main
-      style={{
-        maxWidth: 900,
-        margin: "40px auto",
-        padding: 20,
-        color: "white",
-      }}
-    >
+    <main style={{ maxWidth: 900, margin: "40px auto", padding: 20, color: "white" }}>
       <h1 style={{ fontSize: 48, marginBottom: 10 }}>Weekly Picks Admin</h1>
-      <p style={{ color: "#94a3b8", marginBottom: 25 }}>
-        Manage picks for Week {selectedWeek}
-      </p>
+      <p style={{ color: "#94a3b8", marginBottom: 25 }}>Manage picks for Week {selectedWeek}</p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 30 }}>
         {Array.from({ length: 18 }, (_, i) => i + 1).map((week) => (
